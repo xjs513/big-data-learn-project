@@ -7,6 +7,9 @@
     <groupId>com.evente</groupId>
     <artifactId>big-data-learn-project</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <modules>
+        <module>hadoop-learn-project</module>
+    </modules>
     <packaging>pom</packaging>
 
 
@@ -25,5 +28,21 @@
     <dependencyManagement>
 
     </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.10</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
 
 </project>

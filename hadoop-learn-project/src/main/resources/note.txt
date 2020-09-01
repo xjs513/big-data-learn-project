@@ -1,0 +1,25 @@
+[kasa@kasa ~]$ hdfs dfs -mkdir -p /wordcount/input/
+[kasa@kasa ~]$ hdfs dfs -mkdir -p /wordcount/output/
+
+[kasa@kasa ~]$ cd /kasa_data/test_data/
+
+[kasa@kasa test_data]$ hdfs dfs -put wordcount_input.txt /wordcount/input/
+
+查看输出:
+[kasa@kasa test_data]$ hdfs dfs -text /wordcount/output/*
+
+在IDEA中运行MapReduce程序，参数设置都正确的情况下，运行时控制台的输出为：
+log4j:WARN No appenders could be found for logger (org.apache.Hadoop.metrics2.lib.MutableMetricsFactory).
+log4j:WARN Please initialize the log4j system properly.
+log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
+
+解决方法：将 hadoop 下的/etc/hadoop/里面的 log4.properties 拷贝到 /resources 目录下，即可出现 hadoop 的执行日志
+
+打包到集群上运行:  maven->package
+hadoop jar  /kasa_data/test_data/hadoop-learn-project-1.0-SNAPSHOT.jar  com.evente.mapreduce.WordCount
+
+
+hdfs://master:9000/test/input/   file:///home/hadoopuser1/local/chc/tmp/    txt    50
+
+
+
