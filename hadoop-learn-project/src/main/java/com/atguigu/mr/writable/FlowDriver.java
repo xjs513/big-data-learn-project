@@ -1,11 +1,8 @@
 package com.atguigu.mr.writable;
 
-import com.evente.mapreduce.GlobalSortMapReduce;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 
@@ -13,16 +10,20 @@ import java.io.IOException;
 
 public class FlowDriver {
 
-    private static String HOST_NAME = "dev201";
-    private static int port = 8020;
-
+//    private static String HOST_NAME = "dev201";
+    private static String HOST_NAME = "kasa";
+    private static int port = 9000;
+    // hadoop fs -mkdir -p /flow/input
+    // hadoop fs -put /kasa_data/test_data/phone_data.txt /flow/input
+    // hadoop fs -cat /flow/output/*
     private static final String IN = "hdfs://" + HOST_NAME + ":" + port + "/flow/input/";
     private static final String OUT = "hdfs://" + HOST_NAME + ":" + port + "/flow/output/";
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
         //设置环境变量HADOOP_USER_NAME，其值是root
         //在本机调试
-        System.setProperty("HADOOP_USER_NAME", "root");
+//        System.setProperty("HADOOP_USER_NAME", "root");
+        System.setProperty("HADOOP_USER_NAME", "kasa");
         //读取配置文件
         Configuration conf = new Configuration();
         conf.set("fs.defaultFS","hdfs://" + HOST_NAME + ":" + port);
