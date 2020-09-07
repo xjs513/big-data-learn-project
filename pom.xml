@@ -9,6 +9,7 @@
     <version>1.0-SNAPSHOT</version>
     <modules>
         <module>hadoop-learn-project</module>
+        <module>kafka-learn-project</module>
     </modules>
     <packaging>pom</packaging>
 

@@ -19,7 +19,11 @@ import java.io.IOException;
  */
 public class GlobalSortMapReduce {
 
-    private static final String OUT = "hdfs://kasa:9000/sort/output_2/";
+    private static String HOST_NAME = "dev201";
+    private static int port = 8020;
+
+    private static final String IN = "hdfs://" + HOST_NAME + ":" + port + "/sort/input/";
+    private static final String OUT = "hdfs://" + HOST_NAME + ":" + port + "/sort/output_2/";
 
     static class SimpleMapper extends Mapper<LongWritable, Text, IntWritable, IntWritable> {
         @Override
@@ -40,11 +44,11 @@ public class GlobalSortMapReduce {
     public static void main(String[] args) throws Exception {
         //设置环境变量HADOOP_USER_NAME，其值是root
         //在本机调试
-        System.setProperty("HADOOP_USER_NAME", "kasa");
+        System.setProperty("HADOOP_USER_NAME", "root");
         //读取配置文件
         Configuration conf = new Configuration();
-        conf.set("fs.defaultFS","hdfs://kasa:9000");
-        conf.set("yarn.resourcemanager.hostname","kasa");
+        conf.set("fs.defaultFS","hdfs://" + HOST_NAME + ":" + port);
+        conf.set("yarn.resourcemanager.hostname",HOST_NAME);
 
         FileSystem fs = FileSystem.get(conf);
 
@@ -64,8 +68,9 @@ public class GlobalSortMapReduce {
 
         job.setNumReduceTasks(2);
 
+        Path in = new Path(IN);
         Path out = new Path(OUT);
-        org.apache.hadoop.mapreduce.lib.input.FileInputFormat.setInputPaths(job,new Path("hdfs://kasa:9000/sort/input/"));
+        org.apache.hadoop.mapreduce.lib.input.FileInputFormat.setInputPaths(job,in);
         org.apache.hadoop.mapreduce.lib.output.FileOutputFormat.setOutputPath(job,out);
 
         if(fs.exists(out)){

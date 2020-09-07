@@ -75,6 +75,7 @@ public class GlobalSortMapReduceV2 {
         org.apache.hadoop.mapreduce.lib.input.FileInputFormat.setInputPaths(job,new Path("hdfs://kasa:9000/sort/input/"));
         org.apache.hadoop.mapreduce.lib.output.FileOutputFormat.setOutputPath(job,out);
 
+        // 输出路径已存在的话先删除
         if(fs.exists(out)){
             fs.delete(out, true);
         }
