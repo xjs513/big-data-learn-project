@@ -1,6 +1,7 @@
 package com.atguigu.mr.writable;
 
 import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.io.WritableComparable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -10,10 +11,10 @@ import java.io.IOException;
  * 对每个手机号的 上行 下行 总流量   的封装
  */
 
-public class FlowBean implements Writable {
-    private Long upFlow;      // 上行流量
-    private Long downFlow;    // 下行流量
-    private Long sumFlow;     // 总的流量
+public class FlowBean implements WritableComparable<FlowBean> {
+    private transient Long upFlow;      // 上行流量
+    private Long downFlow;              // 下行流量
+    private Long sumFlow;               // 总的流量
 
     public Long getUpFlow() {
         return upFlow;
@@ -74,5 +75,10 @@ public class FlowBean implements Writable {
         this.upFlow = in.readLong();
         this.downFlow = in.readLong();
         this.sumFlow = in.readLong();
+    }
+
+    @Override
+    public int compareTo(FlowBean o) {
+        return o.sumFlow.compareTo(this.sumFlow);
     }
 }

@@ -53,3 +53,7 @@ while (((double) bytesRemaining)/splitSize > SPLIT_SLOP) {
                 blkLocations[blkIndex].getCachedHosts()));
     bytesRemaining -= splitSize;
   }
+
+
+  进度:
+  https://www.bilibili.com/video/BV1BZ4y1K7im?p=959

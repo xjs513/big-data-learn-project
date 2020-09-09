@@ -1,13 +1,10 @@
-package com.atguigu.mr.inputformat;
+package com.atguigu.mr.partitioner;
 
-import com.evente.mapreduce.WordCount;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.input.CombineTextInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.NLineInputFormat;
 
 import java.io.File;
@@ -33,21 +30,13 @@ public class WordCountDriver {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(LongWritable.class);
 
-        // 设置适用 CombineTextInputFormat  默认是TextInputFormat
-        // job.setInputFormatClass(CombineTextInputFormat.class);
-        // CombineTextInputFormat.setMaxInputSplitSize(job, 900000);
-
-        // 设置适用 NLineInputFormat
-        // 文件大小一定  但是每行很小  交给一个 MapTask 处理不合适
-        job.setInputFormatClass(NLineInputFormat.class);
-        NLineInputFormat.setNumLinesPerSplit(job, 5);
 
         job.setNumReduceTasks(3);
 
         String outPath = "E:\\test_data\\output";
 
         Path out = new Path(outPath);
-        org.apache.hadoop.mapreduce.lib.input.FileInputFormat.setInputPaths(job,new Path("E:\\test_data\\nlineinputformat"));
+        org.apache.hadoop.mapreduce.lib.input.FileInputFormat.setInputPaths(job,new Path("E:\\test_data\\wordcount"));
         org.apache.hadoop.mapreduce.lib.output.FileOutputFormat.setOutputPath(job,out);
 
 

@@ -10,7 +10,9 @@ public class Test {
 //        int e = 128, f = 128;
 //        System.out.println(e == f);
 
-        Long a = 100L, b = 100L;
-        System.out.println(a == b);
+//        Long a = 100L, b = 100L;
+//        System.out.println(a == b);
+
+        System.out.println("dlfaksdlfjal;sdkfjas;dlfjksdl;".hashCode());
     }
 }
