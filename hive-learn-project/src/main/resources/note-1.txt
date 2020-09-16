@@ -1,3 +1,12 @@
+Hive 的安装配置  **Hive 不是集群服务, 只是一个客户端而已
+    ** 下载解压
+    ** 修改配置文件
+       hive-site.xml
+       hive-env.sh JAVA_HOME HADOOP_HOME export HIVE_CONF_DIR
+    ** log4j 的配置 hive-log4j.properties
+       hive.log.dir=${java.io.tmpdir}/${user.name}  默认 /tmp/kasa/hive.log.2020-09-16
+       hive.log.dir=/kasa_logs/hive_logs/
+
 启动 metastore 服务:
 nohup hive --service metastore  >/dev/null &
 --------------------------------------------------------------
@@ -41,7 +50,31 @@ Hive 的体系架构
         ** 依赖 metastore 服务，可以用 JDBC 远程连接
     4. Server-hadoop
         ** Hive运行依赖于 HDFS 和 YARN, MAPRED 配置好
+Hive 的理性认知
+    * Hive 的 MapReduce 任务
+      <property>
+        <name>hive.fetch.task.conversion</name>
+        <value>more|minimal</value>
+        <description>
+            Some select queries can be converted to single FETCH task minimizing latency.
+            Currently the query should be single sourced not having any subquery and should not have
+            any aggregations or distinct (which incurs RS), lateral views and joins.
+            1. minimal : SELECT STAR, FILTER on partition columns, LIMIT only
+            2. more    : SELECT, FILTER, LIMIT only (TABLESAMPLE,virtual columns)
+        </description>
+      </property>
+    * Hive 的元数据库的备份与还原
+        mysqldump
+    * Hive 操作 HQL 语句的两个参数
+        hive -e "select * from test.person;"  ## 分号可有可无
+        hive -f test.hql
+    * Hive 历史命令存放位置
 
+    * Hive 临时生效设置
+
+    * Hive 内部表与外部表
+
+    * Hive 分区分桶表
 --------------------------------------------------------------
 Hive 表操作相关 database: test
 create database if not exists test comment '测试数据库';
