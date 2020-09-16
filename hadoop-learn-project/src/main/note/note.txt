@@ -21,7 +21,8 @@ hadoop jar  /kasa_data/test_data/hadoop-learn-project-1.0-SNAPSHOT.jar  com.even
 
 hdfs://master:9000/test/input/   file:///home/hadoopuser1/local/chc/tmp/    txt    50
 
-HDFS-web页面权限不足问题:
+------------------- 常见问题 --------------------------------------------------
+1. HDFS-web页面权限不足问题:
 core-site.xml 中添加如下配置，重启集群
 <property>
 	<name>hadoop.http.staticuser.user</name>
