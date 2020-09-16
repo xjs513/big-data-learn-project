@@ -1,0 +1,98 @@
+启动 metastore 服务:
+nohup hive --service metastore  >/dev/null &
+--------------------------------------------------------------
+启动 hiveserver2 服务:
+nohup hive --service hiveserver2 >/dev/null &
+hiveserver2的服务端口默认是10000，
+--------------------------------------------------------------
+Hive从2.0版本开始
+WebUI端口默认是10002，在终端使用命令
+netstat -anop|grep 10000
+和
+netstat -anop|grep 10002
+--------------------------------------------------------------
+beeline 连接hive:
+lenmom@Mi1701 ~$ beeline
+Beeline version 1.2.1.spark2 by Apache Hive
+beeline> !connect jdbc:hive2://localhost:10000/default
+Connecting to jdbc:hive2://localhost:10000/default
+Enter username for jdbc:hive2://localhost:10000/default:
+Enter password for jdbc:hive2://localhost:10000/default:
+。。。。
+Connected to: Apache Hive (version 2.3.4)
+Driver: Hive JDBC (version 1.2.1.spark2)
+Transaction isolation: TRANSACTION_REPEATABLE_READ
+0: jdbc:hive2://localhost:10014/default> show databases;
++----------------+--+
+| database_name  |
++----------------+--+
+| default        |
+| orc            |
++----------------+--+
+--------------------------------------------------------------
+Hive 的体系架构
+    1. Client
+        ** 终端命令行
+        ** JDBC 不常用，太麻烦，不介入在线业务
+    2. metastore
+        ** 原数据和字段名以及数据信息之间的双射关系
+        ** 目前存储在 MySQL 中
+    3. hiveserver2
+        ** 依赖 metastore 服务，可以用 JDBC 远程连接
+    4. Server-hadoop
+        ** Hive运行依赖于 HDFS 和 YARN, MAPRED 配置好
+
+--------------------------------------------------------------
+Hive 表操作相关 database: test
+create database if not exists test comment '测试数据库';
+create table if not exists t1(eid int comment '唯一ID', name string, sex string) row format delimited fields terminated by '\t' lines terminated by '\n' stored as textfile;
+查看数据库信息:  desc database test;
+解决中文注释乱码问题:
+alter table DBS modify column `DESC` varchar(256) character set utf8;
+alter table COLUMNS_V2 modify column COMMENT varchar(256) character set utf8;
+alter table TABLE_PARAMS modify column PARAM_VALUE varchar(4000) character set utf8;
+alter table PARTITION_KEYS modify column PKEY_COMMENT varchar(4000) character set utf8;
+查看数据表信息:
+desc formatted t1;
+show create table t1;
+desc t1;
+
+-------------------------------------------------------------- 集合数据类型
+创建本地测试文件test.txt
+songsong,bingbing_lili,xiao song:18_xiaoxiao song:19,hui long guan_beijing
+yangyang,caicai_susu,xiao yang:18_xiaoxiao yang:19,chao yang_beijing
+Hive上创建测试表test
+create table test(
+    name string,
+    friends array<string>,
+    children map<string, int>,
+    address struct<street:string, city:string>
+)
+row format delimited
+fields terminated by ','
+collection items terminated by '_'
+map keys terminated by ':'
+lines terminated by '\n';
+
+字段解释：
+row format delimited fields terminated by ','       -- 列分隔符
+collection items terminated by '_'                  --MAP STRUCT 和 ARRAY 的分隔符(数据分割符号)
+map keys terminated by ':'                          -- MAP中的key与value的分隔符
+lines terminated by '\n';                           -- 行分隔符
+
+导入文本数据到测试表
+hive (default)> load data local inpath ‘/opt/module/datas/test.txt’into table test
+
+访问三种集合列里的数据，以下分别是ARRAY，MAP，STRUCT的访问方式
+hive (default)> select friends[1],children['xiao song'],address.city from test where name="songsong";
+OK
+_c0     _c1     city
+lili    18      beijing
+Time taken: 0.076 seconds, Fetched: 1 row(s)
+
+
+
+
+
+
+https://www.bilibili.com/video/BV1WJ411A78y?p=5
