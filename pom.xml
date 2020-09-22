@@ -11,6 +11,8 @@
         <module>hadoop-learn-project</module>
         <module>kafka-learn-project</module>
         <module>hive-learn-project</module>
+        <module>spark-learn-project</module>
+        <module>flink-learn-project</module>
     </modules>
     <packaging>pom</packaging>
 

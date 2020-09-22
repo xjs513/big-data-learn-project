@@ -69,12 +69,26 @@ Hive 的理性认知
         hive -e "select * from test.person;"  ## 分号可有可无
         hive -f test.hql
     * Hive 历史命令存放位置
-
+        cat ~/.hivehistory
+        用户排查逻辑错误或者查看常用命令
     * Hive 临时生效设置
-
+        set name = value 这样的格式 比如:::
+        set hive.cli.print.header=false;
     * Hive 内部表与外部表
+        ** 内部表 无论是否指定 location 都一样, drop 连同数据一起消失
+        ** 外部表必须指定 location, drop 数据不会消失
+           方便共享数据，也更加方便和安全
 
-    * Hive 分区分桶表
+        ** 从 HDFS 向 Hive 表中导入数据，文件会移动
+        ** 从本地的话是分两步，先上传到 HDFS ,再导入到 Hive 中
+        load data inpath '/kasa_data/test_data/emp.txt' into table emp;
+    * Hive 分区表
+        ** 创建分区表
+        partitioned by (date string comment '日期', hour string comment '小时')
+        ** 导入数据:
+        load data local inpath '/home/kasa/test.txt' into table default.test partition(date='20150828', hour='18');
+        ** 动态分区表
+
 --------------------------------------------------------------
 Hive 表操作相关 database: test
 create database if not exists test comment '测试数据库';
@@ -122,10 +136,129 @@ OK
 _c0     _c1     city
 lili    18      beijing
 Time taken: 0.076 seconds, Fetched: 1 row(s)
+------------------------------- SQL 操作练习  -------------------------------
+!connect jdbc:hive2://localhost:10000/default
+CREATE DATABASE IF NOT EXISTS db_hive_demo COMMENT 'SQL 练习数据库';
 
+use db_hive_demo;
 
+create table if not exists dept(
+deptno int comment '部门编号',
+dname string comment '部门名称',
+loc string comment '部门所在地'
+)
+row format delimited
+fields terminated by '\t';
 
+create table if not exists emp(
+empno int comment '员工编号',
+ename string comment '员工名称',
+job string comment '员工岗位名称',
+mgr int comment '所属经理员工编号',
+hiredate string comment '入职时间',
+sal double comment '薪水',
+comm double comment '奖金',
+deptno int comment '部门编号'
+)
+row format delimited
+fields terminated by '\t';
+location '/emp';
 
+load data local inpath '/kasa_data/test_data/emp.txt' into table emp;
+load data local inpath '/kasa_data/test_data/dept.txt' into table dept;
+---------------------------------------------------------------------------------------------
+SELECT
+    deptno, max(sal) as avg_sal
+FROM
+    emp
+GROUP BY
+    deptno;
+
+查询各部门员工最高薪水
+
++---------+----------+
+| deptno  | avg_sal  |
++---------+----------+
+| 10      | 5000.0   |
+| 20      | 3000.0   |
+| 30      | 2850.0   |
++---------+----------+-----------------------------------------------------------------------
+SELECT
+    e.ename,
+    e.empno,
+    d.dname
+FROM
+    emp e JOIN dept d on d.deptno = e.deptno;
+
+查询各部门员工姓名，员工编号，部门名称
+
++----------+----------+-------------+--+
+| e.ename  | e.empno  |   d.dname   |
++----------+----------+-------------+--+
+| SMITH    | 7369     | RESEARCH    |
+| ALLEN    | 7499     | SALES       |
+| WARD     | 7521     | SALES       |
+| JONES    | 7566     | RESEARCH    |
+| MARTIN   | 7564     | SALES       |
+| BLACK    | 7698     | SALES       |
+| CLARK    | 7782     | ACCOUNTING  |
+| SCOTT    | 7788     | RESEARCH    |
+| KING     | 7839     | ACCOUNTING  |
+| TURNER   | 7844     | SALES       |
+| ADAMS    | 7876     | RESEARCH    |
+| JAMES    | 7900     | SALES       |
+| FORD     | 7902     | RESEARCH    |
+| MILLER   | 7934     | ACCOUNTING  |
++----------+----------+-------------+--+-----------------------------------------------------
+按照部门进行薪资的排名  开窗函数
+SELECT
+    empno,
+    ename,
+    sal,
+    deptno,
+    row_number() over (partition by deptno order by sal desc) as rn
+FROM
+    emp;
++--------+---------+---------+---------+-----+--+
+| empno  |  ename  |   sal   | deptno  | rn  |
++--------+---------+---------+---------+-----+--+
+| 7839   | KING    | 5000.0  | 10      | 1   |
+| 7782   | CLARK   | 2450.0  | 10      | 2   |
+| 7934   | MILLER  | 1300.0  | 10      | 3   |
+| 7788   | SCOTT   | 3000.0  | 20      | 1   |
+| 7902   | FORD    | 3000.0  | 20      | 2   |
+| 7566   | JONES   | 2975.0  | 20      | 3   |
+| 7876   | ADAMS   | 1100.0  | 20      | 4   |
+| 7369   | SMITH   | 800.0   | 20      | 5   |
+| 7698   | BLACK   | 2850.0  | 30      | 1   |
+| 7499   | ALLEN   | 1600.0  | 30      | 2   |
+| 7844   | TURNER  | 1500.0  | 30      | 3   |
+| 7564   | MARTIN  | 1250.0  | 30      | 4   |
+| 7521   | WARD    | 1250.0  | 30      | 5   |
+| 7900   | JAMES   | 950.0   | 30      | 6   |
++--------+---------+---------+---------+-----+--+
+
+按照部门薪资TOP2的员工
+SELECT * FROM (
+    SELECT
+        empno,
+        ename,
+        sal,
+        deptno,
+        row_number() over (partition by deptno order by sal desc) as rn
+    FROM
+        emp
+) t where t.rn <3;
++----------+----------+---------+-----------+-------+--+
+| t.empno  | t.ename  |  t.sal  | t.deptno  | t.rn  |
++----------+----------+---------+-----------+-------+--+
+| 7839     | KING     | 5000.0  | 10        | 1     |
+| 7782     | CLARK    | 2450.0  | 10        | 2     |
+| 7788     | SCOTT    | 3000.0  | 20        | 1     |
+| 7902     | FORD     | 3000.0  | 20        | 2     |
+| 7698     | BLACK    | 2850.0  | 30        | 1     |
+| 7499     | ALLEN    | 1600.0  | 30        | 2     |
++----------+----------+---------+-----------+-------+--+
 
 
 https://www.bilibili.com/video/BV1WJ411A78y?p=5
