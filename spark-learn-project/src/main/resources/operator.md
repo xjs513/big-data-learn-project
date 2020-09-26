@@ -43,7 +43,7 @@
 27.	cogroup => connect group
 
 ####  聚合算子的区别
-reduceByKey aggregateByKey foldByKey combineByKey
+reduceByKey groupByKey aggregateByKey foldByKey combineByKey
 最终都调用了 combineByKeyWithClassTag 方法
 
 ```java

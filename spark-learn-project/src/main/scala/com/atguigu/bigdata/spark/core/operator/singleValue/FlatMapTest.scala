@@ -19,6 +19,9 @@ object FlatMapTest {
       a match {
         case seq: Seq[_] => seq
         case d => List(d)
+
+//        case seq: List[Int] => seq
+//        case d:Int => List(d)
       }
     })
 

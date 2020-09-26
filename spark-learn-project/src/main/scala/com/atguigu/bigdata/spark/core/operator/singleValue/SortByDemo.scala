@@ -19,7 +19,7 @@ object SortByDemo {
     println(sortRDD.collect.mkString(", "))
 
 
-    sortRDD.saveAsTextFile("data\\output\\SortByDemo")
+    sortRDD.saveAsTextFile("spark-learn-project\\data\\output\\SortByDemo")
 
     sc.stop()
   }

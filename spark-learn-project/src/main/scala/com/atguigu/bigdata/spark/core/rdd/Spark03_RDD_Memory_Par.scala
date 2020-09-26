@@ -36,12 +36,15 @@ object Spark03_RDD_Memory_Par {
 
     val rdd: RDD[Int] = sc.makeRDD(List(1, 2, 3, 4), 3)
 
-     // println(rdd.partitions.length)
+
+    println(rdd.partitions)
+
+    rdd.partitions.foreach(p => println(p.index +  "->" + p.hashCode()))
 
     // println(rdd.collect().mkString(","))
 
     // 将RDD的数据保存到分区文件中
-    rdd.saveAsTextFile("data\\output\\Spark03_RDD_Memory_Par")
+    rdd.saveAsTextFile("spark-learn-project\\data\\output\\Spark03_RDD_Memory_Par")
 
 
     sc.stop()

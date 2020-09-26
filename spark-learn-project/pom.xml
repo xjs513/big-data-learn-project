@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.evente</groupId>
-    <artifactId>kasa-spark-learn-atguigu</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>spark-learn-project</artifactId>
+    <packaging>jar</packaging>
     <version>1.0-SNAPSHOT</version>
     <modules>
         <module>summer-framework</module>

@@ -21,7 +21,7 @@ class HotCategoryAnalysisTop10Service extends TService{
     */
   def analysis_bak1() = {
     // TODO : 读取日志数据
-    val actionRDD: RDD[String] = hotCategoryAnalysisTop10Dao.readFile("input/user_visit_action.csv")
+    val actionRDD: RDD[String] = hotCategoryAnalysisTop10Dao.readFile("spark-learn-project/input/user_visit_action.csv")
     // TODO : 对品类进行点击统计 (category, clickCount)
     val clickRDD: RDD[(String, Int)] = actionRDD.map(
       (action: String) => {
@@ -71,7 +71,7 @@ class HotCategoryAnalysisTop10Service extends TService{
     */
   def analysis_bak2() = {
     // TODO : 读取日志数据
-    val actionRDD: RDD[String] = hotCategoryAnalysisTop10Dao.readFile("input/user_visit_action.csv")
+    val actionRDD: RDD[String] = hotCategoryAnalysisTop10Dao.readFile("spark-learn-project/input/user_visit_action.csv")
 
     // TODO : 缓存 RDD   性能优化
     actionRDD.cache()
@@ -279,7 +279,7 @@ class HotCategoryAnalysisTop10Service extends TService{
     */
   override def analysis() = {
     // TODO : 读取日志数据
-    val actionRDD: RDD[String] = hotCategoryAnalysisTop10Dao.readFile("input/user_visit_action.txt")
+    val actionRDD: RDD[String] = hotCategoryAnalysisTop10Dao.readFile("spark-learn-project/input/user_visit_action.txt")
 
     // TODO : 对品类进行点击统计 (category, clickCount)
     val flatMapRDD: RDD[(String, HotCategory)] = actionRDD.flatMap(

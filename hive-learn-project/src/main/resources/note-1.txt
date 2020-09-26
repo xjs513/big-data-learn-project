@@ -10,7 +10,7 @@ Hive 的安装配置  **Hive 不是集群服务, 只是一个客户端而已
 启动 metastore 服务:
 nohup hive --service metastore  >/dev/null &
 --------------------------------------------------------------
-启动 hiveserver2 服务:
+启动 hiveserver2 服务:  这个需要一点时间
 nohup hive --service hiveserver2 >/dev/null &
 hiveserver2的服务端口默认是10000，
 --------------------------------------------------------------
@@ -167,15 +167,15 @@ location '/emp';
 load data local inpath '/kasa_data/test_data/emp.txt' into table emp;
 load data local inpath '/kasa_data/test_data/dept.txt' into table dept;
 ---------------------------------------------------------------------------------------------
+P11. Hive-SQL操作
+https://www.bilibili.com/video/BV1WJ411A78y?p=11
+查询各部门员工最高薪水
 SELECT
     deptno, max(sal) as avg_sal
 FROM
     emp
 GROUP BY
     deptno;
-
-查询各部门员工最高薪水
-
 +---------+----------+
 | deptno  | avg_sal  |
 +---------+----------+
@@ -183,15 +183,13 @@ GROUP BY
 | 20      | 3000.0   |
 | 30      | 2850.0   |
 +---------+----------+-----------------------------------------------------------------------
+查询各部门员工姓名，员工编号，部门名称
 SELECT
     e.ename,
     e.empno,
     d.dname
 FROM
     emp e JOIN dept d on d.deptno = e.deptno;
-
-查询各部门员工姓名，员工编号，部门名称
-
 +----------+----------+-------------+--+
 | e.ename  | e.empno  |   d.dname   |
 +----------+----------+-------------+--+
@@ -236,8 +234,7 @@ FROM
 | 7564   | MARTIN  | 1250.0  | 30      | 4   |
 | 7521   | WARD    | 1250.0  | 30      | 5   |
 | 7900   | JAMES   | 950.0   | 30      | 6   |
-+--------+---------+---------+---------+-----+--+
-
++--------+---------+---------+---------+-----+--+--------------------------------------------
 按照部门薪资TOP2的员工
 SELECT * FROM (
     SELECT

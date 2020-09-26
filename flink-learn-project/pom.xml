@@ -15,6 +15,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <scala.version>2.11.12</scala.version>
+        <flink.flink>1.11.1</flink.flink>
     </properties>
 
     <dependencies>
@@ -22,7 +23,7 @@
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-java</artifactId>
-            <version>1.6.1</version>
+            <version>${flink.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
@@ -33,7 +34,7 @@
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-streaming-java_2.11</artifactId>
-            <version>1.6.1</version>
+            <version>${flink.version}</version>
             <!-- provided 只在代码编译时起作用 -->
             <!--
             <scope>provided</scope>
@@ -48,7 +49,7 @@
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-clients_2.11</artifactId>
-            <version>1.6.1</version>
+            <version>${flink.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
