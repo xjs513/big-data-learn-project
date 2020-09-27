@@ -39,6 +39,8 @@ over() 函数中如果不适用这三个函数, 窗口大小是针对查询产�
       ROWS BETWEEN 2 PRECEDING AND 1 FOLLOWING（表示往前2行到往后1行）
       ROWS BETWEEN 2 PRECEDING AND CURRENT ROW（表示往前2行到当前行）
       ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING（表示当前行到终点）
+
+      RANGE between 表示当前值减去或加上的一个区间范围[]
       ------------------------------------------------------------------------
 2. 与 over() 搭配使用的分析函数
    2.1 聚合类
