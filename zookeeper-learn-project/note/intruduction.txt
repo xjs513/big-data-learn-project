@@ -99,7 +99,7 @@ https://gitee.com/gaozhihong
    * 下载、解压缩到目标文件夹
    * 修改配置文件 zoo.cfg  myId 文件  创建数据目录和日志目录(最好两者分开配置)
 4. zookeeper 常用 shell 命令
-   4.1 新增节点
+   4.1 新增节点  默认创建永久无序节点
      create [-s] [-e] path data # 其中 -s 为有序节点, -e 为临时节点
      创建永久节点并写入数据: create /hadoop "123456"
      创建永久有序节点, 此时节点名为指定的节点名+自增序号
@@ -115,7 +115,11 @@ https://gitee.com/gaozhihong
 
      // Ephemeral  [ɪˈfemərəl] adj.短暂的; 瞬息的;
      // Sequential [sɪˈkwenʃl] adj.按次序的; 顺序的; 序列的;
+   4.2 编辑
 
+   4.3 删除
+
+   4.4 查询
 5. zookeeper 的 ACL 权限控制
   5.1 概述: zookeeper 类似文件系统, client 可以创建、更新、删除节点, 那么如何控制权限呢??
       zookeeper 的 ACL(access control list-访问控制列表)可以做到这一点。
