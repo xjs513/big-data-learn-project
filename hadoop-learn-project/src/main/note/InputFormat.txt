@@ -1,4 +1,6 @@
-InputFormat: 负责 Map 端数据的输入
+InputFormat:
+负责 Map 端数据的输入
+
 重要的方法：
     getSplits(): 生成切片信息
     createRecordReader(): 负责输入数据的读取处理
@@ -11,7 +13,7 @@ InputFormat: 负责 Map 端数据的输入
     CombineFileInputFormat :
         默认的 TextInputFormat 切片机制是对任务按照单个文件进行切片，不管文件多小，都至少是一个切片，
         都会对应一个 MapTask,有大量小文件时，效率极其低下。
-        CombineFileInputFormat的子类 CombineTextInputFormat 适用于小文件过多的场景，它可以将多个小文件从逻辑上划分到一个切片中，
+        CombineFileInputFormat 的子类 CombineTextInputFormat 适用于小文件过多的场景，它可以将多个小文件从逻辑上划分到一个切片中，
         这样多个小文件就可以交给一个 MapTask 处理了。
     NLineInputFormat
     KeyValueTextInputFormat
@@ -54,6 +56,35 @@ while (((double) bytesRemaining)/splitSize > SPLIT_SLOP) {
     bytesRemaining -= splitSize;
   }
 
+Partitioner:
+
+1. 默认的分区器 HashPartitioner :
+
+获取分区号：
+public int getPartition(K2 key, V2 value, int numReduceTasks) {
+    return (key.hashCode() & 2147483647) % numReduceTasks;
+}
+
+2. 如何获取分区器对象:
+NewOutputCollector(org.apache.hadoop.mapreduce.JobContext jobContext,
+   JobConf job,
+   TaskUmbilicalProtocol umbilical,
+   TaskReporter reporter
+   ) throws IOException, ClassNotFoundException {
+  collector = createSortingCollector(job, reporter);
+  partitions = jobContext.getNumReduceTasks();
+  if (partitions > 1) {
+    partitioner = (org.apache.hadoop.mapreduce.Partitioner<K,V>)
+      ReflectionUtils.newInstance(jobContext.getPartitionerClass(), job);
+  } else {
+    partitioner = new org.apache.hadoop.mapreduce.Partitioner<K,V>() {
+      @Override
+      public int getPartition(K key, V value, int numPartitions) {
+        return partitions - 1;
+      }
+    };
+  }
+}
 
   进度:
   https://www.bilibili.com/video/BV1BZ4y1K7im?p=959
