@@ -113,8 +113,47 @@ https://gitee.com/gaozhihong
      创建临时有序节点, 在会话结束后自动删除:
      create -s -e /aa "aaa"
 
+     // Ephemeral  [ɪˈfemərəl] adj.短暂的; 瞬息的;
+     // Sequential [sɪˈkwenʃl] adj.按次序的; 顺序的; 序列的;
 
 5. zookeeper 的 ACL 权限控制
+  5.1 概述: zookeeper 类似文件系统, client 可以创建、更新、删除节点, 那么如何控制权限呢??
+      zookeeper 的 ACL(access control list-访问控制列表)可以做到这一点。
+      ACL 权限控制, 使用 scheme:id:permission 来标识, 主要涵盖 3 个方面：
+      * 权限模式(scheme): 授权的策略
+      * 授权对象(id): 授权的对象
+      * 权限(permission): 授予的权限
+      特性如下:
+      * zookeeper 的权限控制是基于 znode 节点的, 需要对每个节点设置权限
+      * 每个 znode 支持设置多种权限控制方案和多个权限
+      * 子节点不会继承父节点的权限, 客户端无权访问某节点, 但不一定无权访问其子节点
+      例如:
+      setAcl /test2 ip:192.168.60.130:cdrwa
+      // 将节点/test2权限设置为 Ip:192.168.60.130 的客户端可以进行增、删、改、查、管理权限
+  5.2 权限模式
+      采用何种方式授权, 目前四种授权方案
+      world: 只有一个用户: anyone, 代表登录 zookeeper 的所有人(默认授权模式)
+      ip  : 对客户端使用 ip 地址认证
+      auth: 使用已添加认证的用户认证
+      digest: 使用"用户名:密码"方式认证
+  5.3 授权的对象
+      授权对象ID是指, 权限富赋予的实体, 例如: IP地址或用户
+  5.4 授予的权限
+      create delete read write admin 即 增 删 改 查 管理权限, 简写为 cdrwa.
+      其中 delete 是指对二级子节点的删除权限, 其他四种权限都是对当前节点自身的操作权限。
+      create    c   可以创建子节点
+      delete    d   可以删除子节点(仅下一级节点)
+      read      r   可以读取节点数据及显示子节点列表
+      write     w   可以设置节点数据
+      admin     a   可以设置节点ACL权限
+  5.5 授权的相关命令
+      getAcl    getAcl <path>            读取 ACL 权限
+      setAcl    setAcl <path> <acl>       设置 ACL 权限
+      addauth   addauth <scheme> <auth>   添加认证用户
+  5.6 案例
+      world setAcl /test2 world:anyone:cdrwa
+      ip    setAcl /test2 ip:192.168.60.130:cdrwa
+
 
 6. zookeeper 的 JAVA API操作
 
