@@ -63,30 +63,88 @@ public class ZKSetData {
     }
 
     @Test
-    public void setAsync(){
+    public void setAsync() {
         zooKeeper.setData(
-            "/kasa_test/create11",
-            "new value setAsync 11大订单".getBytes(),
-            4,
-            new AsyncCallback.StatCallback() {
-                @Override
-                public void processResult(int i, String s, Object o, Stat stat) {
-                    if (i<0){
-                        System.out.println("异步更新节点信息-失败");
-                        System.out.println("stat = " + stat);
-                    }else {
-                        System.out.println("异步更新节点信息-成功");
-                        System.out.println("stat = " + stat);
+                "/kasa_test/create11",
+                "new value setAsync 11大订单".getBytes(),
+                4,
+                new AsyncCallback.StatCallback() {
+                    @Override
+                    public void processResult(int i, String s, Object o, Stat stat) {
+                        if (i < 0) {
+                            System.out.println("异步更新节点信息-失败");
+                            System.out.println("stat = " + stat);
+                        } else {
+                            System.out.println("异步更新节点信息-成功");
+                            System.out.println("stat = " + stat);
+                        }
                     }
-                }
-            },
-            "setAsync"
+                },
+                "setAsync"
         );
-//        try {
-//            TimeUnit.SECONDS.sleep(1);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
     }
 
+
+    @Test
+    public void deleteSync(){
+        try {
+            zooKeeper.delete(
+                    "/kasa_test/create11",
+                    -1);
+        } catch (KeeperException | InterruptedException e) {
+            assert false;
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void deleteAsync(){
+        zooKeeper.delete(
+                "/kasa_test/create11",
+                -1,
+                new AsyncCallback.VoidCallback() {
+                    @Override
+                    public void processResult(int i, String path, Object ctx) {
+                        // 0 代表操作成功
+                        System.out.println(i);
+                        // 节点的路径
+                        System.out.println(path);
+                        // 上下文的参数
+                        System.out.println(ctx);
+                    }
+                },
+                "deleteAsync"
+        );
+    }
+
+    @Test
+    public void getSync(){
+        try {
+            Stat stat = new Stat();
+            byte[] data = zooKeeper.getData(
+                    "/kasa_test",
+                    false, stat);
+            System.out.println("new String(data) = " + new String(data));
+        } catch (KeeperException | InterruptedException e) {
+            assert false;
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void getAsync(){
+        zooKeeper.getData(
+                "/kasa_test/create11",
+                false,
+                new Stat(),
+                new AsyncCallback.DataCallback() {
+
+                    @Override
+                    public void processResult(int i, String s, Object o, byte[] bytes, Stat stat) {
+
+                    }
+                },
+                "getAsync"
+        );
+    }
 }

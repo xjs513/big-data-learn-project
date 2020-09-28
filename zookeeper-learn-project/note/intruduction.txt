@@ -240,4 +240,31 @@ https://gitee.com/gaozhihong
         * callback : 异步回调接口
         * ctx : 传递上下文参数
         案例: 见具体 java 代码 com.evente.ZKSetData.java。
+  6.4 删除节点
+        // 同步方式
+        delete(String path, int version);
+        // 异步方式
+        delete(String path, int version,
+                AsyncCallback.VoidCallback callback, Object ctx);
+        参数说明:
+          * path: znode 路径。例如: /node1/node1/node1
+          * version : znode的当前版本号, 修改之前, CAS 机制验证。
+                      每当数据更新时, 版本号也会递增。
+                      -1 表示不验证版本号
+          * callback : 异步回调接口
+          * ctx : 传递上下文参数
+          案例: 见具体 java 代码 com.evente.ZKSetData.java。
+  6.5 查看节点
+        // 同步方式
+        getData(String path, boolean b, Stat stat);
+        // 异步方式
+        getData(String path, boolean b, Stat stat
+                AsyncCallback.DataCallback callback, Object ctx);
+        参数说明:
+          * path: znode 路径。例如: /node1/node1/node1
+          * b : 是否使用连接对象中注册的监听器
+          * stat : 返回 znode 的元数据
+          * callback : 异步回调接口
+          * ctx : 传递上下文参数
+          案例: 见具体 java 代码 com.evente.ZKSetData.java。
 7. 基于 zookeeper 的分布式锁实现
