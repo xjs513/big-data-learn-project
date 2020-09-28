@@ -115,11 +115,17 @@ https://gitee.com/gaozhihong
 
      // Ephemeral  [ɪˈfemərəl] adj.短暂的; 瞬息的;
      // Sequential [sɪˈkwenʃl] adj.按次序的; 顺序的; 序列的;
-   4.2 编辑
+   4.2 修改节点
+       set /node1/node11 "new value"
+   4.3 删除节点
+       del /node # 有子节点无法删除
+       rmr /node # 可以连同子节点一起删除
+   4.4 查看节点和状态
+       get /node1/node11
+   4.5 返回节点列表
+       ls /node1/node11
+   4.6 监听器
 
-   4.3 删除
-
-   4.4 查询
 5. zookeeper 的 ACL 权限控制
   5.1 概述: zookeeper 类似文件系统, client 可以创建、更新、删除节点, 那么如何控制权限呢??
       zookeeper 的 ACL(access control list-访问控制列表)可以做到这一点。
@@ -155,10 +161,83 @@ https://gitee.com/gaozhihong
       setAcl    setAcl <path> <acl>       设置 ACL 权限
       addauth   addauth <scheme> <auth>   添加认证用户
   5.6 案例
-      world setAcl /test2 world:anyone:cdrwa
-      ip    setAcl /test2 ip:192.168.60.130:cdrwa
-
-
+      world  授权模式: setAcl /test2 world:anyone:cdrwa
+      ip     授权模式: setAcl /test2 ip:192.168.60.130:cdrwa
+             对多个IP授权: setAcl /test2 ip:192.168.60.129:cdrwa,ip:192.168.60.130:cdrwa
+      auth   授权模式:
+             addauth digest <user>:<password> # 先添加认证用户
+             setAcl <path> auth:<user>:<acl>
+             案例:
+             addauth digest itcast:123456
+             setAcl /node3 auth:itcast:cdrwa
+      digest 授权模式: 不用先添加认证用户
+             setAcl <path> digest:<user>:<password>:<acl>
+             这里的 password 是经过SHA1及BASE64处理的密文,shell中计算如下:
+             echo -n <user>:<password> | openssl dgst -binary -sha1 | openssl base64
+             比如:
+             echo -n itheima:123456 | openssl dgst -binary -sha1 | openssl base64
+             ##  得到  qlzQzCLKhBROghkooLvb+Mlwv4A=
+             案例:
+             create /node4 "node4"
+             setAcl /node4 digest:itheima:qlzQzCLKhBROghkooLvb+Mlwv4A=:cdrwa
+             授权之后添加认证用户才能访问对应节点: addauth digest itheima:12345
+      多种授权授权: 同一节点可以同时使用多种模式授权
+         setAcl /node5 ip:192.168.60.129:cdra,
+         auth:itcast:cdrwa,
+         digest:itheima:qlzQzCLKhBROghkooLvb+Mlwv4A=:cdrwa
+      ACL 超级管理员:
+        zookeeper 的权限管理模式有一种 super 模式, 提供一个超管可以访问任何权限的节点
+        假设超管是: super:admin,
+        需要先为超管生成密码的密文:
+        echo -n super:admin | openssl dgst -binary -sha1 | openssl base64
+        然后找到 zookeeper 目录下的 /bin/zkServer.sh服务器脚本文件, 找到如下行:
+        nohup $JAVA "-Dzookeeper.log.dir=${ZOO_LOG_DIR}" "-Dzookeeper.root.logger=${ZOO_LOG4J_PROP}"
+        这就是启动命令,默认只有以上两个配置项,我们添加一个超管的配置项
+        "Dzookeeper.DigestAuthenticationProvider.superDigest=super:qlzQzCLKhBROghkooLvb+Mlwv4A="
+        之后启动 zookeeper , 输入以下命令添加权限:
+        addauth digest super:admin ## 添加认证用户
 6. zookeeper 的 JAVA API操作
-
+  znode是zookeeper集合的核心组件,zookeeper API提供了一组方法使用zookeeper集合操作znode的所有细节。
+  客户端应遵循以下步骤,与zookeeper服务器进行清洗而干净的交互：
+    * 连接到zookeeper服务器,服务器为客户端分配会话ID。
+    * 定期向服务器发送心跳。否则会话ID会过期,需要重新连接。
+    * 会话ID活动时,可以获取/设置znode。
+    * 任务完成后,断开连接。如果客户端长期不活动,服务器会主动断开客户端。
+  6.1 连接到 zookeeper
+      Zookeeper(String connectionString, int sessionTimeout, Watcher watcher)
+      参数说明:
+      connectionString: zookeeper 主机
+      sessionTimeout:   会话超时时间,单位毫秒
+      watcher:          实现"监视器"对象。zookeeper集合通过监视器对象返回连接状态。
+      案例: 见具体 java 代码 com.evente.ZookeeperConnection.java。
+  6.2 新增节点
+      // 同步方式
+      create(String path, byte[] data, List<ACL> acl, CreateMode createMode);
+      // 异步方式
+      create(String path, byte[] data, List<ACL> acl, CreateMode createMode,
+             AsyncCallback.StringCallback callback, Object ctx);
+      参数说明:
+      * path: znode 路径。例如: /node1/node1/node1
+      * data: 存储在 znode 中的数据
+      * acl : 要创建的节点的访问控制列表。zookeeper API 提供了一个静态接口来获取基本的ACL列表。
+              例如: ZooDefs.Ids.OPEN_ACL_UNSAFE 返回打开 znode 的 acl 列表。
+      * createMode : 节点的类型,这是一个枚举。
+      * callback : 异步回调接口
+      * ctx : 传递上下文参数
+      案例: 见具体 java 代码 com.evente.ZKCreate.java。
+  6.3 更新节点
+      // 同步方式
+      setData(String path, byte[] data, int version);
+      // 异步方式
+      setData(String path, byte[] data, int version,
+              StatCallback callback, Object ctx);
+      参数说明:
+        * path: znode 路径。例如: /node1/node1/node1
+        * data: 存储在 znode 中的数据
+        * version : znode的当前版本号, 修改之前, CAS 机制验证。
+                    每当数据更新时, 版本号也会递增。
+                    -1 表示不验证版本号
+        * callback : 异步回调接口
+        * ctx : 传递上下文参数
+        案例: 见具体 java 代码 com.evente.ZKSetData.java。
 7. 基于 zookeeper 的分布式锁实现

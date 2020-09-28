@@ -26,7 +26,7 @@ public class ZKCreate {
     @Before
     public void before() throws Exception {
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        zooKeeper = new ZooKeeper("39.98.67.88:2181", 5000, new Watcher() {
+        zooKeeper = new ZooKeeper("dev201:2181", 5000, new Watcher() {
             @Override
             public void process(WatchedEvent event) {
                 if (event.getState() == Event.KeeperState.SyncConnected) {
@@ -37,6 +37,7 @@ public class ZKCreate {
         });
         // 主线程阻塞等待连接对象的创建成功
         countDownLatch.await();
+        System.out.println("SessionId = "  +   zooKeeper.getSessionId());
     }
 
     /**
@@ -50,78 +51,117 @@ public class ZKCreate {
          * 第三个参数：权限列表 ZooDefs.Ids.OPEN_ACL_UNSAFE:world:anyone:cdrwa /
          * 第四个参数：节点的类型: 持久化节点
          */
-        zooKeeper.create("/hello/gzh", "helloworld".getBytes(), ZooDefs.Ids.READ_ACL_UNSAFE, CreateMode.PERSISTENT);
+        zooKeeper.create("/hello", "helloworld".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
     }
 
-    /**
-     * world授权模式
-     */
     @Test
-    public void als1() throws KeeperException, InterruptedException {
-        // world授权模式
-        // 权限列表
+    public void create2() throws KeeperException, InterruptedException {
+        /*
+         * 第一个参数：节点的路径
+         * 第二个参数：节点的数据
+         * 第三个参数：权限列表 ZooDefs.Ids.READ_ACL_UNSAFE:world:anyone:r /
+         * 第四个参数：节点的类型: 持久化节点
+         */
+        zooKeeper.create("/hello", "helloworld".getBytes(), ZooDefs.Ids.READ_ACL_UNSAFE, CreateMode.PERSISTENT);
+    }
+
+    @Test
+    public void create3() throws KeeperException, InterruptedException {
+        /*
+         * 第一个参数：节点的路径
+         * 第二个参数：节点的数据
+         * 第三个参数：权限列表
+         *      world 授权模式
+         * 第四个参数：节点的类型: 持久化节点
+         */
+
         List<ACL> acls = new ArrayList<>();
-        // 授权模式和授权对象
-        Id id = new Id("world", "anyone");
-        // 权限设置
-        acls.add(new ACL(ZooDefs.Perms.READ, id));
-        acls.add(new ACL(ZooDefs.Perms.WRITE, id));
-        zooKeeper.create("/hello/cl", "cl".getBytes(), acls, CreateMode.PERSISTENT);
+        Id id = new Id("world",  "anyone");
+        acls.add(new ACL(1, id));
+        acls.add(new ACL(2, id));
+
+        zooKeeper.create("/create3", "create3".getBytes(), acls, CreateMode.PERSISTENT);
     }
 
-    /**
-     * IP授权模式
-     */
     @Test
-    public void als2() throws Exception {
-        // IP授权模式
-        // 权限列表
+    public void create4() throws KeeperException, InterruptedException {
+        // ip 授权模式
         List<ACL> acls = new ArrayList<>();
-        // 授权模式和授权对象
-        Id id = new Id("ip", "0.0.0.0");
-        // 权限设置
-        acls.add(new ACL(ZooDefs.Perms.ALL, id));
-        zooKeeper.create("/hello/alsj", "cl".getBytes(), acls, CreateMode.PERSISTENT);
+        Id id = new Id("ip",  "192.168.1.129");
+        acls.add(new ACL(31, id));
+        zooKeeper.create("/create_ip", "create_ip".getBytes(), acls, CreateMode.PERSISTENT);
     }
 
-    /**
-     * auth授权模式
-     */
     @Test
-    public void als3() throws Exception {
-        // auth授权模式
+    public void create5() throws KeeperException, InterruptedException {
+        // auth 授权模式
         // 添加授权用户
-        zooKeeper.addAuthInfo("digest", "root:070313".getBytes());
-        // 权限列表
-        List<ACL> acls = new ArrayList<>();
-        // 授权模式和授权对象
-        Id id = new Id("auth", "root");
-        // 权限设置
-        acls.add(new ACL(ZooDefs.Perms.ALL, id));
-        zooKeeper.create("/hello/eh", "eel".getBytes(), acls, CreateMode.PERSISTENT);
+        zooKeeper.addAuthInfo("digest", "itcast:123456".getBytes());
+        zooKeeper.create("/create_ip", "create_ip".getBytes(), ZooDefs.Ids.CREATOR_ALL_ACL, CreateMode.PERSISTENT);
     }
 
-    /**
-     * digest授权模式
-     */
     @Test
-    public void als4() throws Exception {
-        // digest授权模式
+    public void create6() throws KeeperException, InterruptedException {
+        // auth 授权模式
+        // 添加授权用户
+        zooKeeper.addAuthInfo("digest", "itcast:123456".getBytes());
         // 权限列表
         List<ACL> acls = new ArrayList<>();
-        // 授权模式和授权对象
-        Id id = new Id("digest", "root:4d9PWRXHtxrRSgCIGCixNUZdTPQ=");
-        // 权限设置
+        Id id = new Id("auth",  "itcast");
+        acls.add(new ACL(ZooDefs.Perms.READ, id));
+
+        zooKeeper.create("/create_ip", "create_ip".getBytes(), acls, CreateMode.PERSISTENT);
+    }
+
+    @Test
+    public void create7() throws KeeperException, InterruptedException {
+        // digest 授权模式
+        // 权限列表
+        List<ACL> acls = new ArrayList<>();
+        Id id = new Id("digest",  "itheima:qlzQzCLKhBROghkooLvb+Mlwv4A=");
         acls.add(new ACL(ZooDefs.Perms.ALL, id));
-        zooKeeper.create("/hello/cjk", "cls".getBytes(), acls, CreateMode.PERSISTENT);
+        String s = zooKeeper.create("/create7", "create7".getBytes(), acls, CreateMode.PERSISTENT);
+    }
+
+    @Test
+    public void create8() throws KeeperException, InterruptedException {
+        /*
+         * 持久化 顺序节点
+         */
+        String result = zooKeeper.create("/kasa_test/create8", "create8".getBytes(),
+                ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT_SEQUENTIAL
+        );
+        System.out.println("result = " + result);
+    }
+
+    @Test
+    public void create9() throws KeeperException, InterruptedException {
+        /*
+         * 创建临时节点 连接断开后自动删除
+         */
+        String result = zooKeeper.create("/kasa_test/create9", "create9".getBytes(),
+                ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL
+        );
+        System.out.println("result = " + result);
+    }
+
+    @Test
+    public void create10() throws KeeperException, InterruptedException {
+        /*
+         * 创建临时有序节点 连接断开后自动删除
+         */
+        String result = zooKeeper.create("/kasa_test/create10", "create10".getBytes(),
+                ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL
+        );
+        System.out.println("result = " + result);
     }
 
     /**
      * 异步创建节点
      */
     @Test
-    public void create2() throws KeeperException, InterruptedException {
-        /**
+    public void create11() throws KeeperException, InterruptedException {
+        /*
          * 第一个参数：节点的路径
          * 第二个参数：节点的数据
          * 第三个参数：权限列表 ZooDefs.Ids.OPEN_ACL_UNSAFE:world:anyone:cdrwa /
@@ -129,22 +169,33 @@ public class ZKCreate {
          * 第五个参数：异步回调接口
          * 第六个参数：上下文参数
          */
-        zooKeeper.create("/hello/xjp", "zhuxi".getBytes(), ZooDefs.Ids.READ_ACL_UNSAFE, CreateMode.PERSISTENT, new AsyncCallback.StringCallback() {
-            @Override
-            public void processResult(int rc, String path, Object ctx, String name) {
-                // 0 代表创建成功
-                System.out.println(rc);
-                // 节点的路径
-                System.out.println(path);
-                // 上下文的参数
-                System.out.println(ctx);
-                // 节点的路径
-                System.out.println(name);
-            }
-        }, "i am context");
-        TimeUnit.SECONDS.sleep(1);
+        zooKeeper.create(
+                "/kasa_test/create11",
+                "create11".getBytes(),
+                ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                CreateMode.PERSISTENT,
+                new AsyncCallback.StringCallback() {
+                    @Override
+                    public void processResult(int rc, String path, Object ctx, String name) {
+                        // 0 代表创建成功
+                        System.out.println(rc);
+                        // 节点的路径
+                        System.out.println(path);
+                        // 上下文的参数
+                        System.out.println(ctx);
+                        // 节点的路径
+                        System.out.println(name);
+                    }
+                },
+                "i am context");
         System.out.println("创建完成");
+        TimeUnit.SECONDS.sleep(1);
     }
+
+
+
+
+
 
     /**
      * 关闭连接
@@ -152,6 +203,7 @@ public class ZKCreate {
     @After
     public void after() throws InterruptedException {
         if (zooKeeper != null) {
+//            TimeUnit.SECONDS.sleep(60);
             System.out.println("关闭成功");
             zooKeeper.close();
         }
