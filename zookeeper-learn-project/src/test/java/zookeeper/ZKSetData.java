@@ -6,6 +6,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -23,7 +24,7 @@ public class ZKSetData {
     @Before
     public void before() throws Exception {
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        zooKeeper = new ZooKeeper("dev201:2181", 5000, new Watcher() {
+        zooKeeper = new ZooKeeper("kasa:2181", 5000, new Watcher() {
             @Override
             public void process(WatchedEvent event) {
                 if (event.getState() == Event.KeeperState.SyncConnected) {
@@ -136,12 +137,42 @@ public class ZKSetData {
         zooKeeper.getData(
                 "/kasa_test/create11",
                 false,
-                new Stat(),
                 new AsyncCallback.DataCallback() {
-
                     @Override
                     public void processResult(int i, String s, Object o, byte[] bytes, Stat stat) {
+                        System.out.println("i = " + i);
+                        System.out.println("new Strint(bt) = " + new String(bytes));
+                    }
+                },
+                "getAsync"
+        );
+    }
 
+    @Test
+    public void getChildrenSync(){
+        try {
+            Stat stat = new Stat();
+            List<String> children = zooKeeper.getChildren(
+                    "/kasa_test",
+                    false);
+            children.forEach(child -> {
+                System.out.println("child = " + child);
+            });
+        } catch (KeeperException | InterruptedException e) {
+            assert false;
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void getChildrenAsync(){
+        zooKeeper.getChildren(
+                "/kasa_test",
+                false,
+                new AsyncCallback.Children2Callback() {
+                    @Override
+                    public void processResult(int i, String s, Object o, List<String> list, Stat stat) {
+                        System.out.println("i = " + i);
                     }
                 },
                 "getAsync"

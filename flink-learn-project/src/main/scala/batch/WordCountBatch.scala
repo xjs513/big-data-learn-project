@@ -2,8 +2,7 @@ package batch
 
 import org.apache.flink.api.scala.{AggregateDataSet, DataSet, ExecutionEnvironment}
 
-import org.apache.flink.api.sca
-la._
+import org.apache.flink.api.scala._
 
 object WordCountBatch {
 
