@@ -1,11 +1,13 @@
-package batch
-
-import org.apache.flink.api.scala.{AggregateDataSet, DataSet, ExecutionEnvironment}
+package com.atguigu.wc
 
 import org.apache.flink.api.scala._
 
-object WordCountBatch {
-
+/*
+ * @Author: "songzhanliang"
+ * @Date: 2020/10/12 21:43
+ * @Description: 
+ */
+object WordCount {
   val path = "E:\\IdeaProjects\\big-data-learn-project\\data\\input\\words.txt";
 
   def main(args: Array[String]): Unit = {

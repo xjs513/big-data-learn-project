@@ -1,0 +1,53 @@
+1. 利用程序生成数据: skew_data.txt
+
+create table skew_data(region String,count int) row format delimited fields terminated by '\t';
+load data local inpath "/kasa_data/test_data/skew_data.txt" overwrite into table skew_data;
+
+
+select * from skew_data limit 10;
+
+set mapred.reduce.tasks = 10;
+select
+  region,
+  sum(1) as total_count
+from
+  skew_data
+group by
+  region;
+
+INFO  : Hadoop job information for Stage-1: number of mappers: 1; number of reducers: 10
+INFO  : 2020-10-11 21:16:48,855 Stage-1 map = 0%,  reduce = 0%
+INFO  : 2020-10-11 21:16:56,283 Stage-1 map = 100%,  reduce = 0%, Cumulative CPU 2.84 sec
+INFO  : 2020-10-11 21:17:18,257 Stage-1 map = 100%,  reduce = 7%, Cumulative CPU 4.39 sec
+INFO  : 2020-10-11 21:17:22,920 Stage-1 map = 100%,  reduce = 10%, Cumulative CPU 6.04 sec
+INFO  : 2020-10-11 21:17:27,373 Stage-1 map = 100%,  reduce = 20%, Cumulative CPU 8.65 sec
+INFO  : 2020-10-11 21:17:29,780 Stage-1 map = 100%,  reduce = 30%, Cumulative CPU 11.41 sec
+INFO  : 2020-10-11 21:17:30,880 Stage-1 map = 100%,  reduce = 37%, Cumulative CPU 12.5 sec
+INFO  : 2020-10-11 21:17:32,137 Stage-1 map = 100%,  reduce = 47%, Cumulative CPU 15.12 sec
+INFO  : 2020-10-11 21:17:35,554 Stage-1 map = 100%,  reduce = 50%, Cumulative CPU 16.57 sec
+INFO  : 2020-10-11 21:17:41,076 Stage-1 map = 100%,  reduce = 60%, Cumulative CPU 18.98 sec
+INFO  : 2020-10-11 21:17:46,448 Stage-1 map = 100%,  reduce = 70%, Cumulative CPU 21.27 sec
+INFO  : 2020-10-11 21:17:53,999 Stage-1 map = 100%,  reduce = 100%, Cumulative CPU 28.6 sec
+INFO  : MapReduce Total cumulative CPU time: 28 seconds 480 msec
+
+
+set mapred.reduce.tasks = 10;
+select
+  region,
+  sum(1) as total_count
+from
+  skew_data where region<>'北京'
+group by
+  region;
+
+set mapred.reduce.tasks = 10;
+
+
+set hive.groupby.skewindata = true;
+explain select
+  region,
+  sum(1) as total_count
+from
+  skew_data where region='北京'
+group by
+  region;
