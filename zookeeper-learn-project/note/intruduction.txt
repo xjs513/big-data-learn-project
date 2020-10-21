@@ -125,7 +125,7 @@ https://gitee.com/gaozhihong
    4.5 返回节点列表
        ls /node1/node11
    4.6 监听器
-
+       get /path watch
 5. zookeeper 的 ACL 权限控制
   5.1 概述: zookeeper 类似文件系统, client 可以创建、更新、删除节点, 那么如何控制权限呢??
       zookeeper 的 ACL(access control list-访问控制列表)可以做到这一点。
@@ -258,12 +258,36 @@ https://gitee.com/gaozhihong
         // 同步方式
         getData(String path, boolean b, Stat stat);
         // 异步方式
-        getData(String path, boolean b, Stat stat
+        getData(String path, boolean b,
                 AsyncCallback.DataCallback callback, Object ctx);
         参数说明:
           * path: znode 路径。例如: /node1/node1/node1
           * b : 是否使用连接对象中注册的监听器
           * stat : 返回 znode 的元数据
+          * callback : 异步回调接口
+          * ctx : 传递上下文参数
+          案例: 见具体 java 代码 com.evente.ZKSetData.java。
+  6.6 查看子节点
+        // 同步方式
+        getChildren(String path, boolean b);
+        // 异步方式
+        getChildren(String path, boolean b,
+                AsyncCallback.ChildrenCallback callback, Object ctx);
+        参数说明:
+          * path: znode 路径。例如: /node1/node1/node1
+          * b : 是否使用连接对象中注册的监听器
+          * callback : 异步回调接口
+          * ctx : 传递上下文参数
+          案例: 见具体 java 代码 com.evente.ZKSetData.java。
+  6.7 判断节点是否存在
+        // 同步方式
+        exists(String path, boolean b);
+        // 异步方式
+        exists(String path, boolean b,
+                AsyncCallback.StatCallback callback, Object ctx);
+        参数说明:
+          * path: znode 路径。例如: /node1/node1/node1
+          * b : 是否使用连接对象中注册的监听器
           * callback : 异步回调接口
           * ctx : 传递上下文参数
           案例: 见具体 java 代码 com.evente.ZKSetData.java。

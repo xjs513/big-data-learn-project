@@ -17,10 +17,11 @@ public class ZookeeperConnection {
         // 由于连接的创建是异步的, 因此创建一个计数器
         CountDownLatch countDownLatch = new CountDownLatch(1);
         try {
-            ZooKeeper zooKeeper = new ZooKeeper("dev201:2181", 5000, new Watcher() {
+            ZooKeeper zooKeeper = new ZooKeeper("dev201:21810", 5000, new Watcher() {
                 // 监视器对象
                 @Override
                 public void process(WatchedEvent event) {
+                    System.out.println("event = " + event);
                     if (event.getState() == Event.KeeperState.SyncConnected){
                         System.out.println("连接创建成功!");
                         countDownLatch.countDown();

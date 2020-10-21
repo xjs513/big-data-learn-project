@@ -6,8 +6,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author : Kasa
@@ -125,6 +125,7 @@ public class ZKSetData {
                     "/kasa_test",
                     false, stat);
             System.out.println("new String(data) = " + new String(data));
+            System.out.println("stat = " + stat.getAversion());
         } catch (KeeperException | InterruptedException e) {
             assert false;
             e.printStackTrace();
@@ -133,18 +134,106 @@ public class ZKSetData {
 
     @Test
     public void getAsync(){
+        CountDownLatch countDownLatch = new CountDownLatch(1);
         zooKeeper.getData(
-                "/kasa_test/create11",
+                "/kasa_test",
                 false,
-                new Stat(),
                 new AsyncCallback.DataCallback() {
-
                     @Override
-                    public void processResult(int i, String s, Object o, byte[] bytes, Stat stat) {
-
+                    public void processResult(int i, String path, Object ctx, byte[] bytes, Stat stat) {
+                        System.out.println("i = " + i);
+                        System.out.println("path = " + path);
+                        System.out.println("ctx = " + ctx);
+                        System.out.println("bytes = " + new String(bytes));
+                        System.out.println("stat = " + stat);
+                        countDownLatch.countDown();
                     }
                 },
                 "getAsync"
         );
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void getChildrenSync(){
+        try {
+            Stat stat = new Stat();
+            List<String> children = zooKeeper.getChildren(
+                    "/kasa_test",
+                    false);
+            for (String child : children) {
+                System.out.println("child = " + child);
+            }
+        } catch (KeeperException | InterruptedException e) {
+            assert false;
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void getChildrenAsync(){
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        zooKeeper.getChildren(
+                "/kasa_test",
+                false,
+                new AsyncCallback.ChildrenCallback() {
+                    @Override
+                    public void processResult(int i, String path, Object ctx, List<String> list) {
+                        System.out.println("i = " + i);
+                        System.out.println("path = " + path);
+                        System.out.println("ctx = " + ctx);
+                        for (String child : list) {
+                            System.out.println("child = " + child);
+                        }
+                        countDownLatch.countDown();
+                    }
+                },
+                "getChildrenAsync"
+        );
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void existsSync(){
+        try {
+            Stat exists = zooKeeper.exists("/kasa_test_", false);
+            System.out.println("exists = " + exists);
+        } catch (KeeperException | InterruptedException e) {
+            assert false;
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void existsAsync(){
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        zooKeeper.exists(
+                "/kasa_test4",
+                false,
+                new AsyncCallback.StatCallback() {
+                    @Override
+                    public void processResult(int i, String path, Object ctx, Stat stat) {
+                        System.out.println("i = " + i);
+                        System.out.println("path = " + path);
+                        System.out.println("ctx = " + ctx);
+                        System.out.println("stat = " + stat);
+                        countDownLatch.countDown();
+                    }
+                },
+                "existsAsync"
+        );
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }
