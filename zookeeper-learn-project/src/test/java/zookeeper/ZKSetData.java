@@ -23,7 +23,7 @@ public class ZKSetData {
     @Before
     public void before() throws Exception {
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        zooKeeper = new ZooKeeper("dev201:2181", 5000, new Watcher() {
+        zooKeeper = new ZooKeeper("kasa:2181", 5000, new Watcher() {
             @Override
             public void process(WatchedEvent event) {
                 if (event.getState() == Event.KeeperState.SyncConnected) {
@@ -139,6 +139,7 @@ public class ZKSetData {
                 "/kasa_test",
                 false,
                 new AsyncCallback.DataCallback() {
+<<<<<<< HEAD
                     @Override
                     public void processResult(int i, String path, Object ctx, byte[] bytes, Stat stat) {
                         System.out.println("i = " + i);
@@ -206,6 +207,28 @@ public class ZKSetData {
         try {
             Stat exists = zooKeeper.exists("/kasa_test_", false);
             System.out.println("exists = " + exists);
+=======
+                    @Override
+                    public void processResult(int i, String s, Object o, byte[] bytes, Stat stat) {
+                        System.out.println("i = " + i);
+                        System.out.println("new Strint(bt) = " + new String(bytes));
+                    }
+                },
+                "getAsync"
+        );
+    }
+
+    @Test
+    public void getChildrenSync(){
+        try {
+            Stat stat = new Stat();
+            List<String> children = zooKeeper.getChildren(
+                    "/kasa_test",
+                    false);
+            children.forEach(child -> {
+                System.out.println("child = " + child);
+            });
+>>>>>>> 09c976b8b8d54f165e2c80338b1e0268cf5436bb
         } catch (KeeperException | InterruptedException e) {
             assert false;
             e.printStackTrace();
@@ -213,6 +236,7 @@ public class ZKSetData {
     }
 
     @Test
+<<<<<<< HEAD
     public void existsAsync(){
         CountDownLatch countDownLatch = new CountDownLatch(1);
         zooKeeper.exists(
@@ -226,6 +250,16 @@ public class ZKSetData {
                         System.out.println("ctx = " + ctx);
                         System.out.println("stat = " + stat);
                         countDownLatch.countDown();
+=======
+    public void getChildrenAsync(){
+        zooKeeper.getChildren(
+                "/kasa_test",
+                false,
+                new AsyncCallback.Children2Callback() {
+                    @Override
+                    public void processResult(int i, String s, Object o, List<String> list, Stat stat) {
+                        System.out.println("i = " + i);
+>>>>>>> 09c976b8b8d54f165e2c80338b1e0268cf5436bb
                     }
                 },
                 "existsAsync"

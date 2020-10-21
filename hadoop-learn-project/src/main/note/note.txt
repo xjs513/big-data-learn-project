@@ -1,3 +1,5 @@
+https://www.bilibili.com/video/BV1Me411W7PV?from=search&seid=17704454680967570935
+https://www.bilibili.com/video/BV1cW411r7c5?from=search&seid=17704454680967570935
 [kasa@kasa ~]$ hdfs dfs -mkdir -p /wordcount/input/
 [kasa@kasa ~]$ hdfs dfs -mkdir -p /wordcount/output/
 
