@@ -1,0 +1,90 @@
+InputFormat:
+负责 Map 端数据的输入
+
+重要的方法：
+    getSplits(): 生成切片信息
+    createRecordReader(): 负责输入数据的读取处理
+子抽象类：FileInputFormat
+    getSplits(): 做了具体的实现。Hadoop 默认的切片规则。
+具体实现类：
+    TextInputFormat : Hadoop 默认使用的 InputFormat
+                      默认使用 FileInputFormat 中的 getSplits() 方法类生成切片信息。
+                      使用 LineRecordReader 来读取数据，就是逐行读取。
+    CombineFileInputFormat :
+        默认的 TextInputFormat 切片机制是对任务按照单个文件进行切片，不管文件多小，都至少是一个切片，
+        都会对应一个 MapTask,有大量小文件时，效率极其低下。
+        CombineFileInputFormat 的子类 CombineTextInputFormat 适用于小文件过多的场景，它可以将多个小文件从逻辑上划分到一个切片中，
+        这样多个小文件就可以交给一个 MapTask 处理了。
+    NLineInputFormat
+    KeyValueTextInputFormat
+
+切片与 MapTask 并行度决定机制 =》
+1) 切片个数=MapTask个数
+2) 理论上 MapTask个数越多并行度越高，但是要考虑每个任务处理的数据量
+3) 到底启动多少个MapTask，需要通过切片来量化
+4) 默认情况下切片的个数与实际的数据量和块大小的设置有关系。
+   默认情况下切片的大小和块的大小一致，因此有多少块就有多少切片。
+   Hadoop 也支持我们通过配置的方式改变切片的大小来决定生成多少个切片，此时与块大小无关。
+
+1. 问题引出
+   MapTask 的并行度决定 Map 阶段的任务处理并发度，进而影响整个 job 的处理速度。
+   思考：1G 的数据，启动 8 个 MapTask,可以提高集群的并发处理能力。
+         那么 1K 的数据，也启动 8 个 MapTask，会提高集群性能吗？
+         MapTask 并行任务是否越多越好？
+         哪些因素影响了 MapTask 并行度？
+
+2. MapTask 并行度决定机制
+   数据块：  Block 是 HDFS 物理上把数据分块。
+   数据切片：只是在逻辑上对输入进行分片，并不会在磁盘上将其进行切片存储，只是标记起始位置。
+
+   1. 一个 Job 的 Map 阶段并行度由客户端在提交 Job 时的切片数决定。
+   2. 每一个 Split 切片分配一个 MapTask 并行实例处理
+   3. 默认情况下，切片大小=BlockSize
+   4. 切片时不考虑数据集整体，而是逐个对每一个文件单独切片。
+
+FileInputFormat 源码：
+protected long computeSplitSize(long blockSize, long minSize, long maxSize){
+    return Math.max(minSize, Math.min(maxSize, blockSize));
+}
+
+// 剩余文件大小大于切片大小的 1.1 倍时，才继续切片，否则整体读取
+while (((double) bytesRemaining)/splitSize > SPLIT_SLOP) {
+    int blkIndex = getBlockIndex(blkLocations, length-bytesRemaining);
+    splits.add(makeSplit(path, length-bytesRemaining, splitSize,
+                blkLocations[blkIndex].getHosts(),
+                blkLocations[blkIndex].getCachedHosts()));
+    bytesRemaining -= splitSize;
+  }
+
+Partitioner:
+
+1. 默认的分区器 HashPartitioner :
+
+获取分区号：
+public int getPartition(K2 key, V2 value, int numReduceTasks) {
+    return (key.hashCode() & 2147483647) % numReduceTasks;
+}
+
+2. 如何获取分区器对象:
+NewOutputCollector(org.apache.hadoop.mapreduce.JobContext jobContext,
+   JobConf job,
+   TaskUmbilicalProtocol umbilical,
+   TaskReporter reporter
+   ) throws IOException, ClassNotFoundException {
+  collector = createSortingCollector(job, reporter);
+  partitions = jobContext.getNumReduceTasks();
+  if (partitions > 1) {
+    partitioner = (org.apache.hadoop.mapreduce.Partitioner<K,V>)
+      ReflectionUtils.newInstance(jobContext.getPartitionerClass(), job);
+  } else {
+    partitioner = new org.apache.hadoop.mapreduce.Partitioner<K,V>() {
+      @Override
+      public int getPartition(K key, V value, int numPartitions) {
+        return partitions - 1;
+      }
+    };
+  }
+}
+
+  进度:
+  https://www.bilibili.com/video/BV1BZ4y1K7im?p=959

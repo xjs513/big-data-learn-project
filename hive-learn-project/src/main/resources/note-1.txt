@@ -1,0 +1,261 @@
+Hive 的安装配置  **Hive 不是集群服务, 只是一个客户端而已
+    ** 下载解压
+    ** 修改配置文件
+       hive-site.xml
+       hive-env.sh JAVA_HOME HADOOP_HOME export HIVE_CONF_DIR
+    ** log4j 的配置 hive-log4j.properties
+       hive.log.dir=${java.io.tmpdir}/${user.name}  默认 /tmp/kasa/hive.log.2020-09-16
+       hive.log.dir=/kasa_logs/hive_logs/
+
+启动 metastore 服务:
+nohup hive --service metastore  >/dev/null &
+--------------------------------------------------------------
+启动 hiveserver2 服务:  这个需要一点时间
+nohup hive --service hiveserver2 >/dev/null &
+hiveserver2的服务端口默认是10000，
+--------------------------------------------------------------
+Hive从2.0版本开始
+WebUI端口默认是10002，在终端使用命令
+netstat -anop|grep 10000
+和
+netstat -anop|grep 10002
+--------------------------------------------------------------
+beeline 连接hive:
+lenmom@Mi1701 ~$ beeline
+Beeline version 1.2.1.spark2 by Apache Hive
+beeline> !connect jdbc:hive2://localhost:10000/default
+Connecting to jdbc:hive2://localhost:10000/default
+Enter username for jdbc:hive2://localhost:10000/default:
+Enter password for jdbc:hive2://localhost:10000/default:
+。。。。
+Connected to: Apache Hive (version 2.3.4)
+Driver: Hive JDBC (version 1.2.1.spark2)
+Transaction isolation: TRANSACTION_REPEATABLE_READ
+0: jdbc:hive2://localhost:10014/default> show databases;
++----------------+--+
+| database_name  |
++----------------+--+
+| default        |
+| orc            |
++----------------+--+
+--------------------------------------------------------------
+Hive 的体系架构
+    1. Client
+        ** 终端命令行
+        ** JDBC 不常用，太麻烦，不介入在线业务
+    2. metastore
+        ** 原数据和字段名以及数据信息之间的双射关系
+        ** 目前存储在 MySQL 中
+    3. hiveserver2
+        ** 依赖 metastore 服务，可以用 JDBC 远程连接
+    4. Server-hadoop
+        ** Hive运行依赖于 HDFS 和 YARN, MAPRED 配置好
+Hive 的理性认知
+    * Hive 的 MapReduce 任务
+      <property>
+        <name>hive.fetch.task.conversion</name>
+        <value>more|minimal</value>
+        <description>
+            Some select queries can be converted to single FETCH task minimizing latency.
+            Currently the query should be single sourced not having any subquery and should not have
+            any aggregations or distinct (which incurs RS), lateral views and joins.
+            1. minimal : SELECT STAR, FILTER on partition columns, LIMIT only
+            2. more    : SELECT, FILTER, LIMIT only (TABLESAMPLE,virtual columns)
+        </description>
+      </property>
+    * Hive 的元数据库的备份与还原
+        mysqldump
+    * Hive 操作 HQL 语句的两个参数
+        hive -e "select * from test.person;"  ## 分号可有可无
+        hive -f test.hql
+    * Hive 历史命令存放位置
+        cat ~/.hivehistory
+        用户排查逻辑错误或者查看常用命令
+    * Hive 临时生效设置
+        set name = value 这样的格式 比如:::
+        set hive.cli.print.header=false;
+    * Hive 内部表与外部表
+        ** 内部表 无论是否指定 location 都一样, drop 连同数据一起消失
+        ** 外部表必须指定 location, drop 数据不会消失
+           方便共享数据，也更加方便和安全
+
+        ** 从 HDFS 向 Hive 表中导入数据，文件会移动
+        ** 从本地的话是分两步，先上传到 HDFS ,再导入到 Hive 中
+        load data inpath '/kasa_data/test_data/emp.txt' into table emp;
+    * Hive 分区表
+        ** 创建分区表
+        partitioned by (date string comment '日期', hour string comment '小时')
+        ** 导入数据:
+        load data local inpath '/home/kasa/test.txt' into table default.test partition(date='20150828', hour='18');
+        ** 动态分区表
+
+--------------------------------------------------------------
+Hive 表操作相关 database: test
+create database if not exists test comment '测试数据库';
+create table if not exists t1(eid int comment '唯一ID', name string, sex string) row format delimited fields terminated by '\t' lines terminated by '\n' stored as textfile;
+查看数据库信息:  desc database test;
+解决中文注释乱码问题:
+alter table DBS modify column `DESC` varchar(256) character set utf8;
+alter table COLUMNS_V2 modify column COMMENT varchar(256) character set utf8;
+alter table TABLE_PARAMS modify column PARAM_VALUE varchar(4000) character set utf8;
+alter table PARTITION_KEYS modify column PKEY_COMMENT varchar(4000) character set utf8;
+查看数据表信息:
+desc formatted t1;
+show create table t1;
+desc t1;
+
+-------------------------------------------------------------- 集合数据类型
+创建本地测试文件test.txt
+songsong,bingbing_lili,xiao song:18_xiaoxiao song:19,hui long guan_beijing
+yangyang,caicai_susu,xiao yang:18_xiaoxiao yang:19,chao yang_beijing
+Hive上创建测试表test
+create table test(
+    name string,
+    friends array<string>,
+    children map<string, int>,
+    address struct<street:string, city:string>
+)
+row format delimited
+fields terminated by ','
+collection items terminated by '_'
+map keys terminated by ':'
+lines terminated by '\n';
+
+字段解释：
+row format delimited fields terminated by ','       -- 列分隔符
+collection items terminated by '_'                  --MAP STRUCT 和 ARRAY 的分隔符(数据分割符号)
+map keys terminated by ':'                          -- MAP中的key与value的分隔符
+lines terminated by '\n';                           -- 行分隔符
+
+导入文本数据到测试表
+hive (default)> load data local inpath ‘/opt/module/datas/test.txt’into table test
+
+访问三种集合列里的数据，以下分别是ARRAY，MAP，STRUCT的访问方式
+hive (default)> select friends[1],children['xiao song'],address.city from test where name="songsong";
+OK
+_c0     _c1     city
+lili    18      beijing
+Time taken: 0.076 seconds, Fetched: 1 row(s)
+------------------------------- SQL 操作练习  -------------------------------
+!connect jdbc:hive2://localhost:10000/default
+CREATE DATABASE IF NOT EXISTS db_hive_demo COMMENT 'SQL 练习数据库';
+
+use db_hive_demo;
+
+create table if not exists dept(
+deptno int comment '部门编号',
+dname string comment '部门名称',
+loc string comment '部门所在地'
+)
+row format delimited
+fields terminated by '\t';
+
+create table if not exists emp(
+empno int comment '员工编号',
+ename string comment '员工名称',
+job string comment '员工岗位名称',
+mgr int comment '所属经理员工编号',
+hiredate string comment '入职时间',
+sal double comment '薪水',
+comm double comment '奖金',
+deptno int comment '部门编号'
+)
+row format delimited
+fields terminated by '\t';
+location '/emp';
+
+load data local inpath '/kasa_data/test_data/emp.txt' into table emp;
+load data local inpath '/kasa_data/test_data/dept.txt' into table dept;
+---------------------------------------------------------------------------------------------
+P11. Hive-SQL操作
+https://www.bilibili.com/video/BV1WJ411A78y?p=11
+查询各部门员工最高薪水
+SELECT
+    deptno, max(sal) as avg_sal
+FROM
+    emp
+GROUP BY
+    deptno;
++---------+----------+
+| deptno  | avg_sal  |
++---------+----------+
+| 10      | 5000.0   |
+| 20      | 3000.0   |
+| 30      | 2850.0   |
++---------+----------+-----------------------------------------------------------------------
+查询各部门员工姓名，员工编号，部门名称
+SELECT
+    e.ename,
+    e.empno,
+    d.dname
+FROM
+    emp e JOIN dept d on d.deptno = e.deptno;
++----------+----------+-------------+--+
+| e.ename  | e.empno  |   d.dname   |
++----------+----------+-------------+--+
+| SMITH    | 7369     | RESEARCH    |
+| ALLEN    | 7499     | SALES       |
+| WARD     | 7521     | SALES       |
+| JONES    | 7566     | RESEARCH    |
+| MARTIN   | 7564     | SALES       |
+| BLACK    | 7698     | SALES       |
+| CLARK    | 7782     | ACCOUNTING  |
+| SCOTT    | 7788     | RESEARCH    |
+| KING     | 7839     | ACCOUNTING  |
+| TURNER   | 7844     | SALES       |
+| ADAMS    | 7876     | RESEARCH    |
+| JAMES    | 7900     | SALES       |
+| FORD     | 7902     | RESEARCH    |
+| MILLER   | 7934     | ACCOUNTING  |
++----------+----------+-------------+--+-----------------------------------------------------
+按照部门进行薪资的排名  开窗函数
+SELECT
+    empno,
+    ename,
+    sal,
+    deptno,
+    row_number() over (partition by deptno order by sal desc) as rn
+FROM
+    emp;
++--------+---------+---------+---------+-----+--+
+| empno  |  ename  |   sal   | deptno  | rn  |
++--------+---------+---------+---------+-----+--+
+| 7839   | KING    | 5000.0  | 10      | 1   |
+| 7782   | CLARK   | 2450.0  | 10      | 2   |
+| 7934   | MILLER  | 1300.0  | 10      | 3   |
+| 7788   | SCOTT   | 3000.0  | 20      | 1   |
+| 7902   | FORD    | 3000.0  | 20      | 2   |
+| 7566   | JONES   | 2975.0  | 20      | 3   |
+| 7876   | ADAMS   | 1100.0  | 20      | 4   |
+| 7369   | SMITH   | 800.0   | 20      | 5   |
+| 7698   | BLACK   | 2850.0  | 30      | 1   |
+| 7499   | ALLEN   | 1600.0  | 30      | 2   |
+| 7844   | TURNER  | 1500.0  | 30      | 3   |
+| 7564   | MARTIN  | 1250.0  | 30      | 4   |
+| 7521   | WARD    | 1250.0  | 30      | 5   |
+| 7900   | JAMES   | 950.0   | 30      | 6   |
++--------+---------+---------+---------+-----+--+--------------------------------------------
+按照部门薪资TOP2的员工
+SELECT * FROM (
+    SELECT
+        empno,
+        ename,
+        sal,
+        deptno,
+        row_number() over (partition by deptno order by sal desc) as rn
+    FROM
+        emp
+) t where t.rn <3;
++----------+----------+---------+-----------+-------+--+
+| t.empno  | t.ename  |  t.sal  | t.deptno  | t.rn  |
++----------+----------+---------+-----------+-------+--+
+| 7839     | KING     | 5000.0  | 10        | 1     |
+| 7782     | CLARK    | 2450.0  | 10        | 2     |
+| 7788     | SCOTT    | 3000.0  | 20        | 1     |
+| 7902     | FORD     | 3000.0  | 20        | 2     |
+| 7698     | BLACK    | 2850.0  | 30        | 1     |
+| 7499     | ALLEN    | 1600.0  | 30        | 2     |
++----------+----------+---------+-----------+-------+--+
+
+
+https://www.bilibili.com/video/BV1WJ411A78y?p=5

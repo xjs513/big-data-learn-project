@@ -1,0 +1,99 @@
+4.5 监听器 get path [watch]
+   使用 `get path [watch]` 注册的监听器在节点`内容`改变时通知客户端。
+   注意: ** zookeeper 的触发器是一次性的, 触发后即失效。
+   get /hadoop watch
+   set /hadoop 45678
+   WATCH:
+   WatchedEvent state:SyncConnected type:NodeDataChanged path:/hadoop
+4.6 监听器 stat path [watch]
+   使用 `stat path [watch]` 注册的监听器在节点`状态`改变时通知客户端。
+   stat /hadoop watch
+   set /hadoop 45678
+   WATCH:
+   WatchedEvent state:SyncConnected type:NodeDataChanged path:/hadoop
+4.7 监听器 ls\ls2 path [watch]
+   使用 `ls path [watch]` 或 `ls2 path [watch]` 注册的监听器
+   能够监听当前节点下所有子节点的增加和删除操作。
+   ls /hadoop watch
+   create /hadoop/yarn 45678
+   WATCH:
+   WatchedEvent state:SyncConnected type:NodeChildrenChanged path:/hadoop
+--------------------------------------------------------------------------
+1. zookeeper 事件监听机制
+1.1 watcher 概念
+ zookeeper 提供了数据的发布/订阅功能,多个订阅者可同时监听某一特定主题,
+ 当该主题自身状态变化时(节点内容变化,子节点列表变化等),会实时、主动通知订阅者。
+
+ zookeeper 采用了 watcher 机制来实现数据的订阅\发布功能。该机制会在被订阅对象
+ 变化时异步通知客户端,因此客户端不必在watcher注册后轮询阻塞,从而减轻客户端压力。
+
+ watcher 机制实际上与观察者模式类似,可看作观察者模式在分布式场景下的实现。
+1.2 watcher 架构
+  watcher 实现由三个部分组成:
+  ** zookeeper 客户端
+  ** zookeeper 服务器
+  ** 客户端的 ZKWatchManager 对象
+  客户端首先将 Watcher 注册到服务端,同时将 Watcher 对象保存到客户端的 Watcher 管理器中。
+  当 Zookeeper 服务端监听的数据状态变化时,主动通知客户端, Watcher 管理器会触发相关 Watcher
+  来回调对应的处理逻辑,从而完成完整的数据订阅\发布流程。
+1.3 Watcher 特性
+  一次性: Watcher 是一次性的,一旦触发就会移除,再次使用时要重新注册
+  顺序性: Watcher 回调是顺序串行化执行的,只有回调后客户端才能看到最新的数据状态。
+         一个 Watcher 回调逻辑不应太多,以免影响别的 Watcher 执行。
+  轻量级: WatchEvent是最小的通信单元,结构上只包含通知状态、事件类型和节点路径,
+         并不会告诉数据节点变化前后的具体内容
+  时效性: Watcher 只有在当前 session 彻底失效时才会无效,
+         若在 session 有效期内快速重连成功,则Watcher依然存在,仍可接收到通知。
+1.4 Watcher 接口设计
+  Watcher 是一个接口,任何实现了Watcher接口的类都是一个新的Watcher。
+  Watcher 内部包含了两个枚举类: KeeperState、EventType
+  * Watcher 通知状态(KeeperState)
+    KeeperState 是客户端与服务器连接状态发生变化时对应的通知类型。
+    路径为org.apache.zookeeper.Watcher.Event.KeeperState
+    这是一个枚举类,其枚举属性如下:
+    /** @deprecated */
+    @Deprecated
+    Unknown(-1),
+    Disconnected(0),        # 客户端与服务器断开连接时
+    /** @deprecated */
+    @Deprecated
+    NoSyncConnected(1),
+    SyncConnected(3),       # 客户端与服务器正常连接时
+    AuthFailed(4),          # 身份认证失败时
+    ConnectedReadOnly(5),
+    SaslAuthenticated(6),
+    Expired(-112);          # session 失效时
+  * Watcher 事件类型(EventType)
+    EventType 是数据节点发生变化时对应的通知类型。 EventType变化时KeeperState永远处于SyncConnected通知状态下;
+    当KeeperState发生变化时,EventType永远为None。
+    路径为org.apache.zookeeper.Watcher.Event.EventType
+    这是一个枚举类,其枚举属性如下:
+    None(-1),               # 无
+    NodeCreated(1),         # Watcher 监听的数据节点被创建时
+    NodeDeleted(2),         # Watcher 监听的数据节点被删除时
+    NodeDataChanged(3),     # Watcher 监听的数据节点内容发生变更时(无论内容数据是否变化)
+    NodeChildrenChanged(4); # Watcher 监听的数据节点的子节点列表发生变更时
+    注意: 客户端接收的事件通知中只包含通知状态、事件类型和节点路径,并不会告诉数据节点变化前后的具体内容。
+    变化前的数据需要业务自身存储,变化后的数据 需要调用get等方法重新获取;
+1.5 捕获对应的事件
+  在 zookeeper 中采用 zk.getChildren(path, watch)、zk.exists(path, watch)、
+  zk.getData(path, watch)这样的方式为某个 znode 注册监听。
+  下面以 node-x节点为例,说明调用的注册方法和可监听事件间的关系:
+  注册方式                      Created      ChildrenChanged     Changed         Deleted
+  zk.exists(path, watch)       Y            N                   Y               Y
+  zk.getData(path, watch)      N            N                   Y               Y
+  zk.getChildren(path, watch)  N            Y                   N               Y
+1.6 注册 Watcher 的方法
+  1.6.1 客户端与服务器的连接状态
+  通知状态(KeeperState)
+  Disconnected(0),        # 客户端与服务器断开连接时
+  SyncConnected(3),       # 客户端与服务器正常连接时
+  AuthFailed(4),          # 身份认证失败时
+  Expired(-112);          # session 失效时
+
+  事件类型(EventType)为None
+
+
+
+
+

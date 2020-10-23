@@ -1,0 +1,305 @@
+Zookeeper 教程:
+https://www.bilibili.com/video/BV1M741137qY?from=search&seid=5506777398611618380
+
+Zookeeper 典型应用场景介绍:
+https://blog.csdn.net/u013468915/article/details/80955110
+
+Zookeeper 编程练习:
+https://gitee.com/gaozhihong
+
+1. zookeeper 简介
+   由雅虎研究院开发, 是 Google Chubby 的开源实现, 后托管到 Apache, 2010年11月毕业。
+   zookeeper 是一个经典的分布式数据一致性解决方案,
+   致力于为分布式应用提供一个高性能、高可用,且具有严格顺序访问控制能力的分布式协调存储服务。
+   可以理解成一个特殊的文件系统或数据库。
+
+   zookeeper 的主要应用场景:  subscribeDataChanges
+   1. 维护配置信息  发布/订阅
+      我们在开发的时候，有时候需要获取一些公共的配置，比如数据库连接信息等，并且偶然可能需要更新配置。
+      如果我们的服务器有N多台的话，那修改起来会特别的麻烦，并且还需要重新启动。
+      这里Zookeeper就可以很方便的实现类似的功能，能够高效可靠地完成配置的更新操作，
+      并能够保证各配置项在每台服务器上的数据一致性。
+
+      zookeeper 使用 Zab 协议来保证一致性，很多开源项目使用 zookeeper 来维护配置。
+      Hbase 的客户端就是连接一个 zookeeper, 从中获得必要的集群配置信息
+      Kafka 使用 zookeeper 来维护 broker 的信息。
+      Dubbo 使用 zookeeper 来管理一些配置实现服务治理。
+   2. 分布式锁服务
+      在日常开发中，如果是单进程中对共享资源的访问，我们只需要用synchronized或者lock就能实现互斥操作。
+      但是对于跨进程、跨主机、跨网络的共享资源似乎就无能为力了。
+
+      zookeeper 临时顺序节点可以实现分布式锁。
+      // Ephemeral  [ɪˈfemərəl] adj.短暂的; 瞬息的;
+      // Sequential [sɪˈkwenʃl] adj.按次序的; 顺序的; 序列的;
+      String lockName = zkClient.createEphemeralSequential(Constant.LOCK_NODE + Constant.CHILDREN_NODE, "");
+
+      1. 首先 zookeeper 中我们可以创建一个/distributed_lock持久化节点
+      2. 然后再在/distributed_lock节点下创建自己的临时顺序节点，比如：/distributed_lock/task_00000000008
+      3. 获取所有的/distributed_lock下的所有子节点，并排序
+      4. 判读自己创建的节点是否最小值（第一位）
+      5. 如果是，则获取得到锁，执行自己的业务逻辑，最后删除这个临时节点。
+      6. 如果不是最小值，则需要监听自己创建节点前一位节点的数据变化，并阻塞。
+      7. 当前一位节点被删除时，我们需要通过递归来判断自己创建的节点是否在是最小的，如果是则执行5）；如果不是则执行6）（就是递归循环的判断）
+   3. 集群管理
+      集群会因为各种软硬件故障或网络故障，出现某些服务器被移出/加入集群的情况，
+      zookeeper 会把这些信息通知集群中其他正常工作的服务器, 以即使调整存储和计算任务的分配和执行。
+      此外 zookeeper 还会对故障服务器进行诊断并尝试修复。
+   4. 生成分布式唯一ID Master选举 分布式队列
+      单机单库单表系统中,可以用自增属性为记录生成唯一ID,但分库分表后就不行了。
+      可以借助 zookeeper 在分布式环境下生成全局唯一ID。
+      实现: 每次要生成一个新ID时，创建一个持久顺序节点，返回的节点序号即为新ID，然后删除比自己小的节点。
+
+   zookeeper 的设计目标
+   致力于为分布式应用提供一个高性能、高可用,且具有严格顺序访问控制能力的分布式协调存储服务。
+   高性能: 数据都在内存, 直接服务于客户端的所有非事务请求, 尤其适用于以读为主的应用场景。
+   高可用: zookeeper 本身的集群保证高可用
+   严格顺序访问: 对于客户端的每个更新请求,zookeeper 都会分配一个全局唯一的递增编号,反应了事务的先后顺序。
+
+2. zookeeper 数据模型
+   zookeeper 的数据节点可以视为树状结构(或者目录), 树中的各节点称为 znode (即 zookeeper node),
+   一个 znode 可以有多个子节点。
+   znode 在结构上表现为树状, 使用路径 path 来定位某个 znode,
+   比如: /ns-1/itcast/mysql/schema1/table1,
+   此处ns-1、itcast、mysql、schema1、table1分别是根节点、2级节点、3级节点和4级节点;
+   其中 itcast 是 ns-1 的子节点, itcast 是 mysql 的父节点, 以此类推。
+   znode 兼具文件和目录两种特点。既像文件一样维护着数据、元信息、ACL、时间戳等数据结构
+                            又像目录一样可以作为路径标识的一部分。
+
+   如何描述一个 znode 呢? 一个 znode 大体上分为三部分:
+   * 节点的数据: 即 znode data(节点path, 节点data)的关系就像java map 中(key, value)的关系。
+   * 节点的子节点children
+   * 节点的状态stat: 描述当前节点的创建、修改记录, 包括 cZxid、ctime等。
+     在 zookeeper shell 中使用 get 命令查看指定路径节点的 data、stat 信息:
+     get /ns-1/tenant
+     cZxid = 0x6a000000a                        ## 数据节点创建的事务ID
+     ctime = Wed Mar 27 09:56:44 CST 2019       ## 数据节点创建时间
+     mZxid = 0x6a000000a                        ## 数据节点最后一次更新的事务ID
+     mtime = Wed Mar 27 09:56:44 CST 2019       ## 数据节点最后一次更新时间
+     pZxid = 0x6a000000e                        ## 数据节点的子节点最后一次更新的事务ID
+     cversion = 2                               ## 子节点的更改次数
+     dataVersion = 0                            ## 节点数据的更改次数
+     aclVersion = 0                             ## 节点的ACL的更改次数
+     ephemeralOwner = 0x0                       ## 如果节点是临时节点,则标识创建该节点的会话SessionID;
+                                                ## 如果节点是永久节点,则该属性为0
+     dataLength = 0                             ## 节点数据内容的长度
+     numChildren = 2                            ## 当前数据节点的子节点个数
+
+   节点类型
+   zookeeper 中的节点有两种,分别为临时节点和永久节点。节点类型在创建时即确定且不能改变。
+   ** 临时节点:该节点的生命周期依赖于创建它的会话。
+             一旦会话结束, 临时节点被自动删除, 当然也可以手动删除。
+             虽然每个临时节点都绑定到一个特定会话,但对所有客户端可见。
+             临时节点不允许有子节点。
+       临时顺序节点
+       临时非顺序节点
+   ** 永久节点:该节点的生命周期不依赖于会话,且只有客户端显示执行删除操作时才被删除
+       永久顺序节点
+       永久非顺序节点
+3. zookeeper 单机安装
+   * 下载、解压缩到目标文件夹
+   * 修改配置文件 zoo.cfg  myId 文件  创建数据目录和日志目录(最好两者分开配置)
+4. zookeeper 常用 shell 命令
+   4.1 新增节点  默认创建永久无序节点
+     create [-s] [-e] path data # 其中 -s 为有序节点, -e 为临时节点
+     创建永久节点并写入数据: create /hadoop "123456"
+     创建永久有序节点, 此时节点名为指定的节点名+自增序号
+     create -s /a "aaa"  => Create /a0000000000
+     create -s /b "bbb"  => Create /a0000000001
+     create -s /c "ccc"  => Create /a0000000002
+
+     创建临时节点, 在会话结束后自动删除:
+     create -e /tmp "tmp"
+
+     创建临时有序节点, 在会话结束后自动删除:
+     create -s -e /aa "aaa"
+
+     // Ephemeral  [ɪˈfemərəl] adj.短暂的; 瞬息的;
+     // Sequential [sɪˈkwenʃl] adj.按次序的; 顺序的; 序列的;
+   4.2 修改节点
+       set /node1/node11 "new value"
+   4.3 删除节点
+       del /node # 有子节点无法删除
+       rmr /node # 可以连同子节点一起删除
+   4.4 查看节点和状态
+       get /node1/node11
+   4.5 返回节点列表
+       ls /node1/node11
+   4.6 监听器
+       get /path watch
+5. zookeeper 的 ACL 权限控制
+  5.1 概述: zookeeper 类似文件系统, client 可以创建、更新、删除节点, 那么如何控制权限呢??
+      zookeeper 的 ACL(access control list-访问控制列表)可以做到这一点。
+      ACL 权限控制, 使用 scheme:id:permission 来标识, 主要涵盖 3 个方面：
+      * 权限模式(scheme): 授权的策略
+      * 授权对象(id): 授权的对象
+      * 权限(permission): 授予的权限
+      特性如下:
+      * zookeeper 的权限控制是基于 znode 节点的, 需要对每个节点设置权限
+      * 每个 znode 支持设置多种权限控制方案和多个权限
+      * 子节点不会继承父节点的权限, 客户端无权访问某节点, 但不一定无权访问其子节点
+      例如:
+      setAcl /test2 ip:192.168.60.130:cdrwa
+      // 将节点/test2权限设置为 Ip:192.168.60.130 的客户端可以进行增、删、改、查、管理权限
+  5.2 权限模式
+      采用何种方式授权, 目前四种授权方案
+      world: 只有一个用户: anyone, 代表登录 zookeeper 的所有人(默认授权模式)
+      ip  : 对客户端使用 ip 地址认证
+      auth: 使用已添加认证的用户认证
+      digest: 使用"用户名:密码"方式认证
+  5.3 授权的对象
+      授权对象ID是指, 权限富赋予的实体, 例如: IP地址或用户
+  5.4 授予的权限
+      create delete read write admin 即 增 删 改 查 管理权限, 简写为 cdrwa.
+      其中 delete 是指对二级子节点的删除权限, 其他四种权限都是对当前节点自身的操作权限。
+      create    c   可以创建子节点
+      delete    d   可以删除子节点(仅下一级节点)
+      read      r   可以读取节点数据及显示子节点列表
+      write     w   可以设置节点数据
+      admin     a   可以设置节点ACL权限
+  5.5 授权的相关命令
+      getAcl    getAcl <path>            读取 ACL 权限
+      setAcl    setAcl <path> <acl>       设置 ACL 权限
+      addauth   addauth <scheme> <auth>   添加认证用户
+  5.6 案例
+      world  授权模式: setAcl /test2 world:anyone:cdrwa
+      ip     授权模式: setAcl /test2 ip:192.168.60.130:cdrwa
+             对多个IP授权: setAcl /test2 ip:192.168.60.129:cdrwa,ip:192.168.60.130:cdrwa
+      auth   授权模式:
+             addauth digest <user>:<password> # 先添加认证用户
+             setAcl <path> auth:<user>:<acl>
+             案例:
+             addauth digest itcast:123456
+             setAcl /node3 auth:itcast:cdrwa
+      digest 授权模式: 不用先添加认证用户
+             setAcl <path> digest:<user>:<password>:<acl>
+             这里的 password 是经过SHA1及BASE64处理的密文,shell中计算如下:
+             echo -n <user>:<password> | openssl dgst -binary -sha1 | openssl base64
+             比如:
+             echo -n itheima:123456 | openssl dgst -binary -sha1 | openssl base64
+             ##  得到  qlzQzCLKhBROghkooLvb+Mlwv4A=
+             案例:
+             create /node4 "node4"
+             setAcl /node4 digest:itheima:qlzQzCLKhBROghkooLvb+Mlwv4A=:cdrwa
+             授权之后添加认证用户才能访问对应节点: addauth digest itheima:12345
+      多种授权授权: 同一节点可以同时使用多种模式授权
+         setAcl /node5 ip:192.168.60.129:cdra,
+         auth:itcast:cdrwa,
+         digest:itheima:qlzQzCLKhBROghkooLvb+Mlwv4A=:cdrwa
+      ACL 超级管理员:
+        zookeeper 的权限管理模式有一种 super 模式, 提供一个超管可以访问任何权限的节点
+        假设超管是: super:admin,
+        需要先为超管生成密码的密文:
+        echo -n super:admin | openssl dgst -binary -sha1 | openssl base64
+        然后找到 zookeeper 目录下的 /bin/zkServer.sh服务器脚本文件, 找到如下行:
+        nohup $JAVA "-Dzookeeper.log.dir=${ZOO_LOG_DIR}" "-Dzookeeper.root.logger=${ZOO_LOG4J_PROP}"
+        这就是启动命令,默认只有以上两个配置项,我们添加一个超管的配置项
+        "Dzookeeper.DigestAuthenticationProvider.superDigest=super:qlzQzCLKhBROghkooLvb+Mlwv4A="
+        之后启动 zookeeper , 输入以下命令添加权限:
+        addauth digest super:admin ## 添加认证用户
+6. zookeeper 的 JAVA API操作
+  znode是zookeeper集合的核心组件,zookeeper API提供了一组方法使用zookeeper集合操作znode的所有细节。
+  客户端应遵循以下步骤,与zookeeper服务器进行清洗而干净的交互：
+    * 连接到zookeeper服务器,服务器为客户端分配会话ID。
+    * 定期向服务器发送心跳。否则会话ID会过期,需要重新连接。
+    * 会话ID活动时,可以获取/设置znode。
+    * 任务完成后,断开连接。如果客户端长期不活动,服务器会主动断开客户端。
+  6.1 连接到 zookeeper
+      Zookeeper(String connectionString, int sessionTimeout, Watcher watcher)
+      参数说明:
+      connectionString: zookeeper 主机
+      sessionTimeout:   会话超时时间,单位毫秒
+      watcher:          实现"监视器"对象。zookeeper集合通过监视器对象返回连接状态。
+      案例: 见具体 java 代码 com.evente.ZookeeperConnection.java。
+  6.2 新增节点
+      // 同步方式
+      create(String path, byte[] data, List<ACL> acl, CreateMode createMode);
+      // 异步方式
+      create(String path, byte[] data, List<ACL> acl, CreateMode createMode,
+             AsyncCallback.StringCallback callback, Object ctx);
+      参数说明:
+      * path: znode 路径。例如: /node1/node1/node1
+      * data: 存储在 znode 中的数据
+      * acl : 要创建的节点的访问控制列表。zookeeper API 提供了一个静态接口来获取基本的ACL列表。
+              例如: ZooDefs.Ids.OPEN_ACL_UNSAFE 返回打开 znode 的 acl 列表。
+      * createMode : 节点的类型,这是一个枚举。
+      * callback : 异步回调接口
+      * ctx : 传递上下文参数
+      案例: 见具体 java 代码 com.evente.ZKCreate.java。
+  6.3 更新节点
+      // 同步方式
+      setData(String path, byte[] data, int version);
+      // 异步方式
+      setData(String path, byte[] data, int version,
+              StatCallback callback, Object ctx);
+      参数说明:
+        * path: znode 路径。例如: /node1/node1/node1
+        * data: 存储在 znode 中的数据
+        * version : znode的当前版本号, 修改之前, CAS 机制验证。
+                    每当数据更新时, 版本号也会递增。
+                    -1 表示不验证版本号
+        * callback : 异步回调接口
+        * ctx : 传递上下文参数
+        案例: 见具体 java 代码 com.evente.ZKSetData.java。
+  6.4 删除节点
+        // 同步方式
+        delete(String path, int version);
+        // 异步方式
+        delete(String path, int version,
+                AsyncCallback.VoidCallback callback, Object ctx);
+        参数说明:
+          * path: znode 路径。例如: /node1/node1/node1
+          * version : znode的当前版本号, 修改之前, CAS 机制验证。
+                      每当数据更新时, 版本号也会递增。
+                      -1 表示不验证版本号
+          * callback : 异步回调接口
+          * ctx : 传递上下文参数
+          案例: 见具体 java 代码 com.evente.ZKSetData.java。
+  6.5 查看节点
+        // 同步方式
+        getData(String path, boolean b, Stat stat);
+        // 异步方式
+        getData(String path, boolean b
+                AsyncCallback.DataCallback callback, Object ctx);
+        参数说明:
+          * path: znode 路径。例如: /node1/node1/node1
+          * b : 是否使用连接对象中注册的监听器
+          * callback : 异步回调接口
+          * ctx : 传递上下文参数
+          案例: 见具体 java 代码 com.evente.ZKSetData.java。
+  6.6 查看子节点
+        // 同步方式
+        getChildren(String path, boolean b);
+        // 异步方式
+        getChildren(String path, boolean b
+                AsyncCallback.ChildrenCallback callback, Object ctx);
+        参数说明:
+          * path: znode 路径。例如: /node1/node1/node1
+          * b : 是否使用连接对象中注册的监听器
+          * callback : 异步回调接口
+          * ctx : 传递上下文参数
+          案例: 见具体 java 代码 com.evente.ZKSetData.java。
+  6.6 查看子节点
+        // 同步方式
+        getChildren(String path, boolean b);
+        // 异步方式
+        getChildren(String path, boolean b,
+                AsyncCallback.ChildrenCallback callback, Object ctx);
+        参数说明:
+          * path: znode 路径。例如: /node1/node1/node1
+          * b : 是否使用连接对象中注册的监听器
+          * callback : 异步回调接口
+          * ctx : 传递上下文参数
+          案例: 见具体 java 代码 com.evente.ZKSetData.java。
+  6.7 判断节点是否存在
+        // 同步方式
+        exists(String path, boolean b);
+        // 异步方式
+        exists(String path, boolean b,
+                AsyncCallback.StatCallback callback, Object ctx);
+        参数说明:
+          * path: znode 路径。例如: /node1/node1/node1
+          * b : 是否使用连接对象中注册的监听器
+          * callback : 异步回调接口
+          * ctx : 传递上下文参数
+          案例: 见具体 java 代码 com.evente.ZKSetData.java。
+7. 基于 zookeeper 的分布式锁实现
