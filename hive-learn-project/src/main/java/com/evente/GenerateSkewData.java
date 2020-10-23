@@ -42,19 +42,14 @@ public class GenerateSkewData {
         String content;
 
         try (FileOutputStream fos = new FileOutputStream(file)) {
-
             for (int i = 0; i < 30000000; i++) {
-
                 int a = random.nextInt(99);
-
                 content = list.get(a) + "\t" + random.nextInt(10000) + "\n";
                 System.out.println(i + ":" + content);
-
+                // System.out.println(content);
                 fos.write(content.getBytes());
             }
 
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }

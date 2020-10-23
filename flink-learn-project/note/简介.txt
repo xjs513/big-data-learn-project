@@ -1,6 +1,7 @@
-
 https://www.bilibili.com/video/BV1y54y127h2?from=search&seid=3413586314446758597
 
 https://www.cnblogs.com/alexgl2008/articles/12411998.html
 flink kafka exactly once
+
+https://www.bilibili.com/video/BV1y54y127h2?from=search&seid=3413586314446758597
 

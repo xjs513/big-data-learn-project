@@ -2,6 +2,7 @@
 
 create table skew_data(region String,count int) row format delimited fields terminated by '\t';
 load data local inpath "/home/songzhanliang/test_data/skew_data.txt" overwrite into table skew_data;
+load data local inpath "/kasa_data/test_data/skew_data.txt" overwrite into table skew_data;
 
 
 select * from skew_data limit 10;
@@ -14,6 +15,13 @@ explain select
            skew_data
          group by
            region;
+select
+  region,
+  sum(1) as total_count
+from
+  skew_data
+group by
+  region;
 
 INFO  : Hadoop job information for Stage-1: number of mappers: 1; number of reducers: 10
 INFO  : 2020-10-11 21:16:48,855 Stage-1 map = 0%,  reduce = 0%
@@ -33,6 +41,7 @@ INFO  : MapReduce Total cumulative CPU time: 28 seconds 480 msec
 
 set mapred.reduce.tasks = 10;
 explain select
+=======
   region,
   sum(1) as total_count
 from

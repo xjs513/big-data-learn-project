@@ -76,11 +76,12 @@
             -->
         </dependency>
 
+
         <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-clients_2.11</artifactId>
-            <version>${flink.version}</version>
-            <!--        <exclusions>
+           <groupId>org.apache.flink</groupId>
+           <artifactId>flink-clients_2.11</artifactId>
+           <version>${flink.version}</version>
+<!--        <exclusions>
             <exclusion>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
