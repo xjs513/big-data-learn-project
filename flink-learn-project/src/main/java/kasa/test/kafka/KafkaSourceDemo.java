@@ -24,7 +24,7 @@ public class KafkaSourceDemo {
         properties.setProperty("bootstrap.servers", "dev201:9092");
         // only required for Kafka 0.8
         // properties.setProperty("zookeeper.connect", "localhost:2181");
-        properties.setProperty("group.id", "test");
+        properties.setProperty("group.id", "test1");
 
         FlinkKafkaConsumer<String> consumer = new FlinkKafkaConsumer<>("test", new SimpleStringSchema(), properties);
 
@@ -41,12 +41,12 @@ public class KafkaSourceDemo {
         /*
          * Flink 从topic中最初的数据开始消费
          */
-        //consumer.setStartFromEarliest();
+        consumer.setStartFromEarliest();
 
         /*
          * Flink从topic中指定的时间点开始消费，指定时间点之前的数据忽略
          */
-        //consumer.setStartFromTimestamp(1559801580000l);
+        // consumer.setStartFromTimestamp(1559801580000l);
 
         /*
          * Flink从topic中指定的offset开始，这个比较复杂，需要手动指定offset
@@ -56,17 +56,17 @@ public class KafkaSourceDemo {
         /*
          * Flink从topic中最新的数据开始消费
          */
-        //consumer.setStartFromLatest();
+        // consumer.setStartFromLatest();
 
         /*
         * Flink从topic中指定的group上次消费的位置开始消费，所以必须配置group.id参数
         */
-        consumer.setStartFromGroupOffsets();
+        // consumer.setStartFromGroupOffsets();
 
         DataStream<String> lines = env.addSource(consumer);
 
 
-        // lines.print();
+         lines.print();
 
 //        lines.map(line -> {
 //            int a = 10;
