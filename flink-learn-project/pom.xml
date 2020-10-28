@@ -16,9 +16,29 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <scala.version>2.12</scala.version>
         <flink.version>1.11.1</flink.version>
+        <log4j2.version>2.6.2</log4j2.version>
+        <encoding>UTF-8</encoding>
     </properties>
 
     <dependencies>
+        <!-- 日志组件包 -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j2.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log4j2.version}</version>
+        </dependency>
+        <!-- slf4j 和 log4j 的 桥接包-->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${log4j2.version}</version>
+        </dependency>
+
        <!--  Java 开发依赖 -->
         <dependency>
             <groupId>org.apache.flink</groupId>
@@ -49,15 +69,17 @@
             <version>${flink.version}</version>
         </dependency>
 
+
+
+        <!--
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>1.7.25</version>
-            <!--        <scope>test</scope>-->
         </dependency>
 
 
-        <!--
+
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
