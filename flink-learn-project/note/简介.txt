@@ -1,6 +1,79 @@
 https://www.bilibili.com/video/BV1y54y127h2?from=search&seid=3413586314446758597
 
+尚硅谷课程:
 https://www.bilibili.com/video/BV19K4y1f7of?from=search&seid=10208372094786556452
+
+P6: 批处理 WordCount
+
+P7 P8: 流处理 WordCount 及相关扩展
+任务默认并行度, 开发环境是机器默认核心数, 生产环境看配置
+Flink 提供了丰富灵活的设置并行度的手段, 很多算子后面可以 .setParallelism(3)
+
+从外部命令中提取参数 如 socket 主机名和端口号
+ParameterTool parameterTool = ParameterTool.fromArgs(args);
+String host = parameterTool.get("host");
+int port = parameterTool.getInt("host");
+
+--host localhost --port 7777
+
+P9 Flink 集群部署 Standalone Yarn(Session|PerJob) K8s
+
+
+P13 Flink 运行时架构
+运行时组件: JobManager(作业管理器) TaskManager(任务管理器)
+          ResourceManager(资源管理器 Slots) dispatcher(分发器)
+
+
+任务提交流程
+
+任务调度原理
+
+P22 自定义 Source
+作用: 1. 测试业务逻辑是否正确时生成需要的数据
+     2. 从 MySQL Hive 中读取数据
+
+P49 状态管理(一) 概念
+Flink 中的状态有两种: Operator State | Keyed State(用的多)  ==> State Backends
+
+                          --------State---------
+           2. Get state   |                    |  3. Update State
+                          -------- Task --------
+        1. Receive input --------> Task --------> 4. Emit Result
+
+* 由一个任务维护, 并且用来计算某个结果的所有数据, 都属于这个任务的状态。
+* 可以认为状态就是一个本地变量, 可以被任务的业务逻辑访问。
+* Flink 会进行状态管理, 包括状态一致性、故障处理及高效存储和访问, 以便开发者专注于业务逻辑
+
+P50 状态管理(二) Operator State | Keyed State(用的多)
+* 在 Flink 中, 状态始终与特定算子关联
+* 为了使运行时的 Flink 了解算子的状态, 算子要预先注册其状态
+
+** 总的来说, 有两种类型的状态:
+   * 算子状态(Operator State) : 算子状态的作用范围限定为算子任务
+   * 键控状态(Keyed State)    : 根据输入数据流中定义的键(key)来维护和访问
+
+** 算子状态数据结构
+   Ø 列表状态（List state）
+   • 将状态表示为一组数据的列表
+   Ø 联合列表状态（Union list state）
+   • 也将状态表示为数据的列表。它与常规列表状态的区别在于，在发生故
+     障时，或者从保存点（savepoint）启动应用程序时如何恢复
+   Ø 广播状态（Broadcast state）
+   • 如果一个算子有多项任务，而它的每项任务状态又都相同，那么这种特
+     殊情况最适合应用广播状态。
+
+** 键控状态数据结构
+    Ø 值状态（Value state）
+    • 将状态表示为单个的值
+    Ø 列表状态（List state）
+    • 将状态表示为一组数据的列表
+    Ø 映射状态（Map state）
+    • 将状态表示为一组 Key-Value 对
+    Ø 聚合状态（Reducing state & Aggregating state）
+    • 将状态表示为一个用于聚合操作的列表
+
+P51 状态管理(三) 状态在代码中的定义和使用
+* 富函数来配合状态实现业务逻辑
 
 https://www.cnblogs.com/alexgl2008/articles/12411998.html
 flink kafka exactly once
