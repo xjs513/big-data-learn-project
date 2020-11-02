@@ -1,5 +1,6 @@
 package com.atguigu.apitest;
 
+import com.atguigu.modules.SensorReading;
 import lombok.*;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.configuration.Configuration;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -24,19 +26,6 @@ import java.util.stream.Stream;
  * @date : 2020/10/29 16:31
  * @descripthon : 采集温度传感器数据
  */
-
-// 定义温度传感器类
-
-@Setter
-@Getter
-@AllArgsConstructor
-@NoArgsConstructor
-@ToString
-class SensorReading{
-    private String id;
-    private long timestamp;
-    private double temperature;
-}
 
 
 public class SourceTest {
@@ -78,7 +67,7 @@ public class SourceTest {
 //        stream3.print();
 //
         // 4. 使用自定义数据源
-        DataStream<SensorReading> lines = env.addSource(new SimpleSource()).setParallelism(2);
+        DataStream<SensorReading> lines = env.addSource(new MySensorSource()).setParallelism(1);
 
         lines.print();
 
@@ -114,6 +103,7 @@ class MySensorSource extends RichSourceFunction<SensorReading>{
         while (running){
             // 在上次数据基础上更新数据
             curTemp = curTemp.stream().map(t -> new Tuple2<>(t._1, t._2 + random.nextGaussian())).collect(Collectors.toList());
+            TimeUnit.MILLISECONDS.sleep(1500L);
             curTemp.forEach(
                 t -> ctx.collect(
                     new SensorReading(t._1, System.currentTimeMillis(), t._2 < -273.15?-273.15:t._2)

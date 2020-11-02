@@ -1,0 +1,76 @@
+window 类型
+* 时间窗口
+  》 滚动时间窗口
+  》 滑动时间窗口
+  》 会话窗口
+* 计数窗口
+  》 滚动计数窗口
+  》 滑动计数窗口
+
+window API
+* 窗口分配器 : window(WindowAssigner)方法
+  > 一般
+  必须在 keyBy() 之后, windowAll() 很少用
+  > Flink 提供了更加简单的 timeWindow() 和 countWindow() 方法
+    用于方便的定义时间窗口和计数窗口。
+    dataStream.map(r -> new Tuple2<>(r.getId(), r.getTemperature()))
+    .keyBy(r::_1)
+    .timeWindow(Time.seconds(15))
+    reduce((r1, r2) -> (r1._1, r1._2.min(r2._2)))
+
+window() 方法接收的参数时: WindowAssigner
+WindowAssigner 负责将每条输入的数据发送到正确的 window 中
+Flink 提供了通用的 WindowAssigner:
+> 滚动窗口 (tumbling  window)
+> 滑动窗口 (sliding  window)
+> 会话窗口 (session  window)
+> 全局窗口 (global window)
+
+.timeWindow(Time.seconds(15L))
+.timeWindow(Time.seconds(15), Time.seconds(10))
+.window(TumblingEventTimeWindows.of(Time.seconds(15L))) // 开窗  =》 分桶
+.window(SlidingEventTimeWindows.of())
+.window(EventTimeSessionWindows.withGap(Time.seconds(15L)))
+.window(EventTimeSessionWindows.withDynamicGap(
+    (SessionWindowTimeGapExtractor<Tuple2<String, Double>>) element -> element.f1.longValue()
+))
+.countWindow(10L, 5L)
+.countWindowAll(5)
+.timeWindowAll(Time.seconds(15L))
+
+开窗只是对数据进行了进一步的分桶, 并没有真正进行数据处理, 后面要跟一个具体的计算操作
+
+Window Operator = 开窗 + 窗口函数
+
+window function 定义了要对窗口中的数据做的计算操作, 分两类:
+1. 增量聚合函数 - incremental aggregation functions
+   》 每条数据到来就进行计算, 保持一个简单的状态
+   》 ReduceFunction, AggregateFunction
+2. 全窗口函数 - full window functions
+   》 先把窗口内所有数据收集起来, 等到计算时遍历所有数据进行计算
+   》 ProcessWindowFunction, WindowFunction
+
+其他可选 API
+* .trigger() - 触发器 》 定义窗口什么时候关闭, 触发计算并输出结果
+* .evictor() - 移出器 》 定义移除某些数据的逻辑
+* .allowedLateness() - 允许处理迟到的数据
+* .sideOutputLateData() -    将迟到数据放入侧输出流
+* .getSideOutput() -  获取侧输出流
+
+时间(Time)语义
+* Event Time      : 事件发生的时间
+* Ingestion Time  : 数据进入 Flink 的时间
+* Processing Time : 算子的本地时间, 与具体机器相关
+
+// 从调用时刻开始给 env 创建的每一个 stream 追加时间特征
+env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
+
+从当前数据流中提取时间戳字段 和 WaterMark 结合使用
+WaterMark 设计的初衷: 处理乱序数据
+WaterMark 是一条特殊的数据记录
+WaterMark 必须单调递增, 不能后退, WaterMark 与数据的时间戳相关
+
+WaterMark 的传递和时钟向前推移
+* 上游的 WaterMark 广播到下游, 下游对应分区|分桶替换掉比上游广播过来的 WaterMark 小的 WaterMark
+  算子自己的时钟以分区 WaterMark 的最小值为准
+

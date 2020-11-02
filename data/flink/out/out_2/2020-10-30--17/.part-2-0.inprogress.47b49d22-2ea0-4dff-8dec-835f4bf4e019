@@ -1,0 +1,2 @@
+SensorReading(id=sensor_1, timestamp=1547718210, temperature=29.7)
+SensorReading(id=sensor_1, timestamp=1547718213, temperature=30.9)
