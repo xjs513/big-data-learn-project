@@ -14,6 +14,7 @@
         <module>zookeeper-learn-project</module>
         <module>spark-learn-project</module>
         <module>flink-learn-project</module>
+        <module>flink-learn-scala-project</module>
     </modules>
     <packaging>pom</packaging>
 
@@ -21,12 +22,12 @@
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <hadoop.version>2.6.0</hadoop.version>
+<!--        <hadoop.version>2.6.0</hadoop.version>
         <hive.version>1.1.0</hive.version>
         <spark.version>2.4.3</spark.version>
         <flink.version>1.11.0</flink.version>
         <kafka.version>2.2.0</kafka.version>
-        <scala.version>2.11</scala.version>
+        <scala.version>2.12</scala.version>-->
     </properties>
 
 
