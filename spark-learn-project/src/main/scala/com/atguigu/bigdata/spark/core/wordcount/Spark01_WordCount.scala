@@ -8,7 +8,7 @@ object Spark01_WordCount {
     val conf: SparkConf = new SparkConf().setMaster("local[*]").setAppName("Spark01_WordCount")
     val sc: SparkContext = new SparkContext(conf)
 
-    val fileRdd: RDD[String] = sc.textFile("data\\input\\spark_01")
+    val fileRdd: RDD[String] = sc.textFile("data\\input")
 
     val wordRDD: RDD[String] = fileRdd.flatMap(_.split(" "))
 
