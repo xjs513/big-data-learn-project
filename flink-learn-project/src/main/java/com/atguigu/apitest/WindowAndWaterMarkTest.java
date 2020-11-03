@@ -48,7 +48,7 @@ public class WindowAndWaterMarkTest {
                         }
                 );
 
-        OutputTag<Tuple3<String, Long, Double>> lateOutputTag = new OutputTag<>("late");
+        OutputTag<Tuple3<String, Long, Double>> lateOutputTag = new OutputTag<Tuple3<String, Long, Double>>("late"){};
 
         SingleOutputStreamOperator<Tuple3<String, Long, Double>> result = dataStream.keyBy(tuple3 -> tuple3.f0)
                 .timeWindow(Time.seconds(15))

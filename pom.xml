@@ -25,9 +25,13 @@
 <!--        <hadoop.version>2.6.0</hadoop.version>
         <hive.version>1.1.0</hive.version>
         <spark.version>2.4.3</spark.version>
-        <flink.version>1.11.0</flink.version>
+        <flink.version>1.11.1</flink.version>
         <kafka.version>2.2.0</kafka.version>
+<<<<<<< HEAD
         <scala.version>2.12</scala.version>-->
+=======
+        <scala.version>2.12</scala.version>
+>>>>>>> 77467c7f2d3fcf3d9c39ad204aad856aa2d6b25b
     </properties>
 
 

@@ -8,7 +8,7 @@ import org.apache.flink.api.scala._
  * @Description:
  */
 object WordCount {
-  val path = "E:\\IdeaProjects\\big-data-learn-project\\data\\input\\words.txt";
+  val path = "data\\input\\words.txt";
 
   def main(args: Array[String]): Unit = {
     val environment = ExecutionEnvironment.getExecutionEnvironment

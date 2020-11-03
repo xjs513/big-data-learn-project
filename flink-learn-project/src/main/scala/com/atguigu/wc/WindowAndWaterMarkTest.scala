@@ -31,7 +31,7 @@ object WindowAndWaterMarkTest {
 
     val result: DataStream[(String, Long, Double)] = dataStream
       .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor[(String, Long, Double)](Time.seconds(3)) {
-        override def extractTimestamp(element: (String, Long, Double)): Long = element._2
+        override def extractTimestamp(element: (String, Long, Double)): Long = element._2 * 1000
       })
       .keyBy((_: (String, Long, Double))._1)
       .timeWindow(Time.seconds(15))

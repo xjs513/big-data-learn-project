@@ -51,7 +51,8 @@
             <version>${flink.version}</version>
         </dependency>
 
-        <!--  Scala 开发依赖 -->
+        <!--  Scala 开发依赖  -->
+
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
@@ -70,7 +71,7 @@
 
         <dependency>
            <groupId>org.apache.flink</groupId>
-           <artifactId>flink-clients_2.11</artifactId>
+           <artifactId>flink-clients_2.12</artifactId>
            <version>${flink.version}</version>
         </dependency>
 
@@ -162,7 +163,7 @@
                         <goals>
                             <!-- 声明绑定到 maven 的 compile 阶段 -->
                             <goal>compile</goal>
-                            <!--<goal>testCompile</goal>-->
+                            <goal>testCompile</goal>
                         </goals>
                     </execution>
                 </executions>
