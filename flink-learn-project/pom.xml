@@ -112,6 +112,12 @@
             <version>5.1.47</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-statebackend-rocksdb_2.12</artifactId>
+            <version>${flink.version}</version>
+        </dependency>
+
         <!--
         <dependency>
             <groupId>org.slf4j</groupId>
