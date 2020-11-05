@@ -9,3 +9,60 @@
 - 有状态流应用的一致性检查点,其实就是所有任务的状态,
   在某个时间点的一份快照; 这个时间点,应该是所有任务
   都恰好处理完一个相同的输入数据的时候
+-----------------------------------------------
+从检查点回复状态
+- 在流应用程序运行期间, Flink 会定期保存状态的一致性检查点
+- 发生故障时, Flink 会使用最近的检查点类恢复程序的状态, 并重启应用
+- 故障后, 第一步是重启应用
+- 第二步从 CheckPoint 读取并重置状态
+  从检查点重启应用后, 内部状态与检查点完成时的状态一致
+- 第三步: 开始消费检查点到发生故障之间的所有数据
+  这种检查点的保存和恢复机制可以为应用程序提供精确一次的一致性,
+  因为所有算子都会保存检查点并恢复其所有状态,这样所有的输入流
+  都会被重置到检查点完成时的位置
+-----------------------------------------------
+Flink 检查点算法
+- 简单: 暂定 =》 保存检查点状态 =》 恢复应用
+- Flink 的改进
+  * 基于 Chandy-Lamport 算法的分布式快照
+  * 将检查点的保存和数据处理分离, 不暂停整个应用
+
+》 检查点分界线 (Checkpoint Barrier)
+   - 这是一种特殊数据形式, 用于切分数据流中的数据到不同的检查点区间
+   - Barrier 之前到来的数据导致的状态变化, 都会包含在当前 Barrier 所属的检查点中;
+     之后的数据导致的所有变化, 包含在之后的检查点中
+
+》 JobManager 从 Source 添加 Barrier
+-----------------------------------------------------------------------------------
+检查点配置参数
+env.enableCheckpointing(1000L);
+env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
+env.getCheckpointConfig().setCheckpointTimeout(60000L);
+env.getCheckpointConfig().setMaxConcurrentCheckpoints(2);
+env.getCheckpointConfig().setMinPauseBetweenCheckpoints(500L);
+env.getCheckpointConfig().setPreferCheckpointForRecovery(true);
+env.getCheckpointConfig().setTolerableCheckpointFailureNumber(3);
+重启策略配置
+// 重启策略配置
+env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, Time.seconds(5)));
+//2.默认的重启策略是：固定延迟无限重启
+//此处设置重启策略为：出现异常重启3次，隔5秒一次
+env.getConfig().setRestartStrategy(RestartStrategies.fixedDelayRestart(3, Time.seconds(5)));
+-----------------------------------------------------------------------------------
+保存点 (SavePoints)
+- Flink 还提供了可以自定义的镜像保存功能, 即保存点
+- 原则上, 保存点和检查点的实现完全相同, 因此保存点可以认为就是具有一些额外元素的检查点
+- Flink 不会自动创建保存点, 因此用户必须明确触发创建操作
+- 保存点是一个强大的功能. 除了故障恢复外, 还可以实现:
+  -- 有计划的手动备份
+  -- 更新应用程序 状态的定义不能变, 算子不能变(id, 可用 .uid("123") 来手动指定, 也推荐使用)
+  -- 版本迁移
+  -- 暂停和重启应用
+  -- 其他
+
+
+
+
+
+
+

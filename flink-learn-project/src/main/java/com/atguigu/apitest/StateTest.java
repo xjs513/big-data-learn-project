@@ -7,7 +7,9 @@ import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.functions.RichMapFunction;
+import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.state.*;
+import org.apache.flink.api.common.time.Time;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -16,6 +18,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -24,6 +27,7 @@ import org.apache.flink.util.Collector;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author : Kasa
@@ -36,6 +40,26 @@ public class StateTest {
 
         // 设置默认并行度
         env.setParallelism(1);
+
+        // 检查点配置参数检查点配置参数
+/*        env.enableCheckpointing(1000L);
+        env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
+        env.getCheckpointConfig().setCheckpointTimeout(60000L);
+        env.getCheckpointConfig().setMaxConcurrentCheckpoints(2);
+        env.getCheckpointConfig().setMinPauseBetweenCheckpoints(500L);
+        env.getCheckpointConfig().setPreferCheckpointForRecovery(true);
+        env.getCheckpointConfig().setTolerableCheckpointFailureNumber(3);*/
+
+        // 重启策略配置
+/*        env.setRestartStrategy(RestartStrategies.failureRateRestart(5, Time.of(2, TimeUnit.SECONDS), Time.seconds(2)));
+        env.setRestartStrategy(RestartStrategies.failureRateRestart(5, Time.seconds(2), Time.seconds(2)));
+
+
+        env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, Time.seconds(5)));
+        env.setRestartStrategy(RestartStrategies.fixedDelayRestart(3, 1000L));*/
+        //2.默认的重启策略是：固定延迟无限重启
+        //此处设置重启策略为：出现异常重启3次，隔5秒一次
+        env.getConfig().setRestartStrategy(RestartStrategies.fixedDelayRestart(3, Time.seconds(5)));
 
 //        ParameterTool parameterTool = ParameterTool.fromArgs(args);
 //
