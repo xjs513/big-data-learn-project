@@ -1,0 +1,3 @@
+TODO: 从 Kafka 读取数据写入到 ClickHouse 中
+
+实现一个 2PC 的 sink
