@@ -25,7 +25,7 @@ public class MysqlSource extends RichSourceFunction<SourceVo> {
         super.open(parameters);
         Class.forName("com.mysql.jdbc.Driver");//加载数据库驱动
         connection = DriverManager.getConnection("jdbc:mysql://xxx/xxx", "xxx", "xxx");//获取连接
-        ps = connection.prepareStatement("xxx");
+        ps = connection.prepareStatement("select a from b");
     }
 
     @Override

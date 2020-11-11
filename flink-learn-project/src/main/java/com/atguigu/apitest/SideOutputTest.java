@@ -73,7 +73,7 @@ class SplitTempProcessor extends ProcessFunction<SensorReading, SensorReading>{
     }
 
     @Override
-    public void processElement(SensorReading sensorReading, Context context, Collector<SensorReading> collector) throws Exception {
+    public void processElement(SensorReading sensorReading, Context context, Collector<SensorReading> collector) {
         if (sensorReading.getTemperature() > threshold){
             collector.collect(sensorReading);
         } else {
