@@ -18,3 +18,29 @@
    - 同时拥有内存级的本地访问速度和更好的容错保证
 》 RocksDBStateBackend 状态规模大,不要求访问速度的时候  支持增量检查点
    - 将所有状态序列化后, 存入本地的 RocksDB中存储。
+
+
+https://www.cnblogs.com/YuanWeiBlogger/p/12072782.html
+
+从 Checkpoint 回复任务 指定checkpoint目录，重启应用
+
+/data2/flink-1.10.0/bin/flink run hdfs://dev201:8020/flink/rocks_checkpoints/f9566b83fc07d71fc11522eb7ffee278/chk-8 \
+ -yD yarn.containers.vcores=2 -m yarn-cluster -c StateWordCount wordcount.jar
+
+/home/wangyanming/flink-1.10.0/bin/flink run -s hdfs://dev201:8020/flink/rocks_checkpoints/f9566b83fc07d71fc11522eb7ffee278/chk-8 \
+-yD yarn.containers.vcores=2 -m yarn-cluster -c kasa.test.clickhouse.Kafka2ClickhouseDriver /home/songzhanliang/flink-learn-project-1.0-SNAPSHOT-jar-with-dependencies.jar
+
+/home/songzhanliang/flink-1.11.2/bin/flink run -s hdfs://dev201:8020/flink/rocks_checkpoints/675477985706df0f1793c54377cbaa38/chk-49 \
+ -m yarn-cluster -c kasa.test.clickhouse.Kafka2ClickhouseDriver /home/songzhanliang/flink-learn-project-1.0-SNAPSHOT-jar-with-dependencies.jar
+
+bin/flink run -m yarn-cluster -c org.apache.flink.examples.java.wordcount.WordCount ./examples/batch/WordCount.jar
+
+bin/flink run \
+-yat kasa_type \
+-ynm ttt        \
+-m yarn-cluster  \
+-c org.apache.flink.examples.java.wordcount.WordCount ./examples/batch/WordCount.jar
+
+
+/home/wangyanming/flink-1.10.0/bin/flink run \
+ -m yarn-cluster -c com.atguigu.apitest.SourceTest /home/songzhanliang/flink-learn-project-1.0-SNAPSHOT-jar-with-dependencies.jar

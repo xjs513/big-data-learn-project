@@ -32,6 +32,7 @@ public class KafkaSourceDemo {
         // Kafka的消费者，不自动提交偏移量
         properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
 
+        // FlinkKafkaConsumer<String> consumer = new FlinkKafkaConsumer<>("em_logs_pro", new SimpleStringSchema(), properties);
         FlinkKafkaConsumer<String> consumer = new FlinkKafkaConsumer<>("em_logs_pro", new SimpleStringSchema(), properties);
 
         /*
@@ -47,13 +48,13 @@ public class KafkaSourceDemo {
         /*
          * Flink 从topic中最初的数据开始消费
          */
-        // consumer.setStartFromEarliest();
+        consumer.setStartFromEarliest();
 
         /*
          * Flink从topic中指定的时间点开始消费，指定时间点之前的数据忽略
          * 2020-11-03 14:55:00
          */
-        consumer.setStartFromTimestamp(1604386500000L);
+        // consumer.setStartFromTimestamp(1604386500000L);
 
         /*
          * Flink从topic中指定的offset开始，这个比较复杂，需要手动指定offset
