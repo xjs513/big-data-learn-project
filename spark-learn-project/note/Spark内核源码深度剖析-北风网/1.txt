@@ -1,0 +1,135 @@
+Spark 内核源码深度剖析
+https://www.bilibili.com/video/BV1P4411e7v2
+
+1、已经可以熟练进行 Spark 编程
+2、Spark 内核源码的研究, 是学习 Spark 承上启下的阶段
+3、内核源码研究透彻之后, 才可能成为 Spark 高手/精通
+4、才可以继续进行 Spark 性能优化的学习
+5、才可以在实际工作中, 在Spark应用报错时, 能读懂分析 log 找出问题原因
+   甚至根据 log 直接到源码中寻找答案, 最后解决线上故障
+
+# 41 Spark 内核架构
+1、 Application
+2、 spark-submit
+3、 Driver
+4、 SparkContext
+5、 Master
+6、 Worker
+7、 Executor
+8、 Job
+9、 DAGScheduler
+10、TaskScheduler
+11、ShuffleMapTask and ResultTask
+
+* stage     划分算法
+* task      分配算法
+* master    资源调度算法
+
+我们自己编写的代码叫做 Application, 然后通过 spark-submit 提交,
+提交后会创建 Driver, Driver去执行 Application, 也就是我们编写的代码。
+*** Driver 是一个进程, 在 Standalone 模式下, 通过反射创建 DriverActor进程出来
+*** 我们编写的代码开始都是先构造 SparkConf, 再构造 SparkContext。
+*** SparkContext 初始化最重要的两件事就是构造 DAGScheduler 和 TaskScheduler
+TaskScheduler 有自己的后台进程, 它启动之后会向集群的管理节点注册 Application,
+管理节点收到注册 Application 请求后,根据资源调度算法,在集群的一个或多个工作节点上,
+为这个 Application 启动多个 Executor, Executor 启动之后, 反向注册到 TaskScheduler,
+所有的 Executor 都反向注册后, Driver 的 SparkContext 初始化结束, 继续执行 Application 后续代码。
+每执行到一个 action, 就会创建一个 job并提交给 DAGScheduler, DAGScheduler 将 job 划分为
+一个或多个 stage(stage 划分算法), 然后每个 stage 创建一个 TaskSet,TaskSet 交给 TaskScheduler,
+TaskScheduler 把 TaskSet中的每一个task提交到 executor 上执行(Task分配算法)
+
+Executor 内部有线程池, 每接收到一个 task, 都包装成 TaskRunner, 然后从线程池取一个线程出来执行这个 task
+TaskRunner:将代码也就是要执行的算子或函数进行拷贝、反序列化后执行task。
+
+Task 有两种, ShuffleMapTask 和 ResultTask,只有最后一个 stage 是 ResultTask, 之前的都是 ShuffleMapTask
+
+所以，整个 SparkApplication的执行，就是stage分批次把 taskSet 提交到 Executor 运行，
+每个task针对RDD的一个Partition执行我们定义的操作(算子、函数)
+
+
+# 42 宽依赖与窄依赖深度剖析
+窄依赖: Narrow Dependency 子RDD的每个partition,仅仅依赖于父RDD的一个partition
+
+宽依赖: Shuffle Dependency 父RDD每个partition中的数据,传输给了不止一个子RDD的partition
+
+# 43 基于 Yarn 的两种提交模式深度剖析
+Spark 的三种提交模式
+1、Spark内核架构,其实就是standalone模式,基于Spark自己的Master-Worker集群
+2、第二种,是基于Yarn的cluster模式
+3、第三种,是基于Yarn的client模式
+
+AM:ApplicationMaster RM:ResourceManager NM:NodeManager
+
+在Yarn的cluster模式下
+ApplicationMaster 相当于 Driver
+ResourceManager   相当于 Master
+NodeManager       相当于 Worker
+1. spark-submit发送请求到RM,请求启动AM
+2. RM分配一个container到某个NM上,在其中启动AM
+3. AM启动后向RM注册,并请求资源启动executor
+4. RM响应AM请求,分配一批container信息,用于启动executor
+5. AM根据RM响应的container信息,到对应的NM上启动executor
+6. executor启动后,反向到AM注册
+7. 后面的过程就跟 Standalone 模式一样了。
+用于生产,Driver运行在集群节点,没有网络流量问题
+不方便调试,任务提交后看不到日志,通过 yarn application -logs application_id查看日志,麻烦
+
+在Yarn的client模式下:
+1. spark-submit发送请求到RM,请求启动AM,Driver在本地启动
+2. RM分配一个container到某个NM上,在其中启动AM
+   其实启动的是 ExecutorLauncher, 功能有限:
+   申请资源, 启动容器, 但是不管理任务状态、进度、调度
+   应用的阶段划分, Task 调度都在本地的 Driver 进行
+3. AM启动后向RM注册,并请求资源启动executor
+4. RM响应AM请求,分配一批container信息,用于启动executor
+5. AM根据RM响应的container信息,到对应的NM上启动executor
+6. executor启动后,反向到本地的Driver注册
+7. 后面的过程就跟 Standalone 模式一样了。
+用于测试, Driver运行在本地, 负责任务调度, 网络通信量大
+但是可以看到所有的log, 方便调试
+
+# 44 SparkContext原理剖析与源码分析
+SparkContext原理剖析
+1、TaskScheduler
+   向集群的 Master 进行注册
+   createTaskScheduler() => 之后创建了三个重要的东西:
+   1. TaskSchedulerImpl 其实就是我们所说的 TaskScheduler
+      后面会深度剖析,这里知道如何创建即可
+
+
+   2. SparkDeploySchedulerBackend 很重要,
+      在底层接收 TaskSchedulerImpl 的控制, 负责向 Master的注册、
+      Executor 的反向注册、TaskSet 发送到 Executor等操作
+      * 创建这俩之后, 调用 TaskSchedulerImpl#init(),创建3
+   3. 创建 SchedulerPool, 有优先级和不同的调度策略,
+      DAGScheduler让TaskScheduler调度任务的时候,调度任务放在这个调度池中
+   * 在创建完1 2 之后, 调用 TaskSchedulerImpl#start()
+     实际会调用 SparkDeploySchedulerBackend#start(), 创建 AppClient
+     AppClient启动一个线程ClientActor,ClientActor的实现调用两个方法:
+     registerWithMaster() -》 tryRegisterAllMasters()
+     这里方法里面做的最重要的事情是 RegisterApplication
+     RegisterApplication 是一个 case class, 里面封装了 Application 的信息
+     RegisterApplication 被发送到集群的 Master 上,
+     然后找 Worker, 启动 Executor,
+     *** Executor 启动后反向注册到 SparkDeploySchedulerBackend 上
+   TaskScheduler 底层主要基于 SparkDeploySchedulerBackend
+2、DAGScheduler
+  DAGScheduler 底层基于 DAGSchedulerEventProcessActor(线程) 进行通信
+
+3、SparkUI
+   启动一个 jetty 服务器, 提供 web 服务从而显示网页
+
+* SparkContext 初始化的要点
+1. TaskScheduler如何注册 Application, Executor 如何反向注册
+2. DAGScheduler
+3. SparkUI
+
+SparkContext 源码导读
+
+
+
+
+
+
+
+

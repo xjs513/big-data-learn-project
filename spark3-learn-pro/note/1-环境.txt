@@ -1,0 +1,108 @@
+教程地址:
+https://www.bilibili.com/video/BV11A411L7CK?p=4
+
+视频的资料、代码及笔记
+链接：https://pan.baidu.com/s/1NT0-O7ZplxZX4FBMI4od6A
+提取码：5a6h
+
+进度标记: 6
+
+注意 scala 的版本(2.12.10最佳)问题 大版本必须一直, 小版本不能过高
+代码执行过程中会产生大量的执行日志,如果为了更好的查看程序的执行结果,
+可以在项目的 resources 目录下创建 log4j.properties 文件,
+并添加如下日志配置信息:
+log4j.rootCategory=ERROR, console
+
+ERROR:  winutils.exe 的错误, 是由于 Windows 系统用到了Hadoop
+相关服务, 添加 Windows 的系统依赖就可以了。
+
+第三章 Spark 运行环境
+Spark 是一个数据处理的计算框架和引擎, 可以在所有常见的进群环境中运行,
+国内目前主要是 yarn, 不过现在容器式环境发展很快。
+常见运行环境:
+本地模式(与dev不同)、独立模式、EC2、MESOS、YARN、K8S、Docker
+
+在 IDEA 中运行的是 dev 模式, 不是本地模式
+
+C:\install\spark-3.0.0-preview2-bin-hadoop2.7>
+bin\spark-submit.cmd --class org.apache.spark.examples.SparkPi --master local[2] examples/jars/spark-examples_2.12-3.0.0-preview2.jar 10
+
+重点讲解 Yarn 模式
+Spark 是计算框架而不是资源调度框架, 所以资源调度不是其强项和本意。
+和专业的资源调度框架继承更好一些。
+
+1. 下载解压缩到指定目录下
+
+2. 修改 Hadoop 配置文件 hadoop/etc/hadoop/yarn-site.xml
+
+关于影响NodeManager执行MR任务 container 数量的设置问题:
+https://blog.csdn.net/bbaiggey/article/details/50845637
+
+<!-- 是否启动一个线程检查每个任务正使用的物理内存量, 如果任务超出分配值, 则直接将其杀掉, 默认是true -->
+<property>
+    <name>yarn.nodemanager.pmem-check-enabled</name>
+    <value>false</value>
+</property>
+
+<!-- 是否启动一个线程检查每个任务正使用的虚拟内存量, 如果任务超出分配值, 则直接将其杀掉, 默认是true -->
+<property>
+    <name>yarn.nodemanager.vmem-check-enabled</name>
+    <value>false</value>
+    <description>Whether virtual memory limits will be enforced for containers</description>
+</property>
+
+<!-- 任务每使用1MB物理内存, 最多可使用虚拟内存量, 默认是2.1 -->
+<property>
+    <name>yarn.nodemanager.vmem-pmem-ratio</name>
+    <value>4</value>
+    <description>
+        Ratio between virtual memory to physical memory when setting memory limits for  containers.
+    </description>
+</property>
+
+3. 修改 spark-env.sh, 添加 JAVA_HOME 和 YARN_CONF_DIR 配置:
+export JAVA_HOME=/opt/module/java8
+YARN_CONF_DIR=/opt/module/hadoop/etc/hadoop  ## 前面没有 export
+===================================================================
+4. 提交应用:
+bin/spark-submit \
+--class org.apache.spark.examples.SparkPi \
+--master yarn \
+--deploy-mode cluster \
+./examples/jars/spark-examples_2.12-3.0.0-preview2.jar \
+10
+===================================================================
+5. 配置历史服务器
+5.1 修改 spark-defaults.conf.template 为 spark-defaults.conf
+5.2 修改 spark-defaults.conf 文件, 配置日志存储目录
+spark.eventLog.enabled       true
+spark.eventLog.dir           hdfs://linux1:8020/directory
+注意: 需要启动 Hadoop 集群, 目录要提前存在
+5.3 修改 spark-env.sh 文件, 添加日志配置
+export SPARK_HISTORY_OPTS="
+-Dspark.history.ui.port=18080
+-Dspark.history.fs.logDirectory=hdfs://linux1:8020/directory
+-Dspark.history.retainedApplications=30
+"
+** 参数 1 含义: WEB UI 访问端口
+** 参数 2 含义: 指定历史服务器日志存储路径
+** 参数 3 含义: 保存 Application 历史记录的个数, 如果超过这个值, 旧的应用信息被删除,
+              这个是内存中的应用数, 不是页面上显示的应用数。
+5.4 修改 spark-defaults.conf
+spark.yarn.historyServer.address=linux1:18080
+spark.history.ui.port=18080
+## 配置和 yarn 关联
+5.5 启动历史服务
+sbin/start-history-server.sh
+5.6 重新提交应用
+bin/spark-submit \
+--class org.apache.spark.examples.SparkPi \
+--master yarn \
+--deploy-mode client \
+./examples/jars/spark-examples_2.12-3.0.0-preview2.jar \
+10
+
+
+MESOS & K8S 不做过多讲解
+
+Windows 模式, 学习的时候可以使用

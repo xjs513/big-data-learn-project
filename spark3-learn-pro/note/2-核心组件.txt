@@ -1,0 +1,40 @@
+Spark 框架有两个核心组件:
+
+
+Driver & Executor 计算相关
+1. Driver
+   Spark 驱动器节点, 用于执行 Spark 任务中的 main 方法, 负责实际代码的执行。
+   Driver 在 Spark 作业执行时主要负责:
+   》 将用户程序转化为作业(job)
+   》 在 Executor 之间调度任务(task)
+   》 跟踪 Executor 的执行情况
+   》 通过 UI 展示作业运行情况
+   实际上我们无法准确描述其定义, 因为在开发过程中没有任何 Driver 相干的字眼。
+   简单理解: 就是驱动整个应用行动起来的程序, 也成为 Driver 类。
+2. Executor
+   》 负责运行具体任务, 并将结果返回给驱动器进程
+   》 通过自身的块管理器(Block Manager)为用户程序中要求缓存的 RDD 提供内存式存储。
+      RDD 是直接缓存在 Executor 进程内的, 因此缓存可以加速任务计算。
+
+Master & Worker   资源相关  独立部署模式才存在
+
+ApplicationMaster => AM
+
+4.3 核心概念
+
+4.3.1 Executor 与 Core
+    Executor 是运行在工作节点的一个 JVM 进程, 是集群中的计算节点。
+    提交应用时,可以提供参数指定计算节点的个数以及对应的资源。
+    这里的资源指的是工作节点 Executor 的内存大小和使用的 虚拟 CPU 核心数(Core)
+    相关启动参数如下:
+    --num-executors     配置 Executor 的数量
+    --executor-memory   配置 Executor 的内存
+    --executor-cores    配置 Executor 核心数
+4.3.2 并行度(Parallelism)    注意不是并发
+  分布式计算框架中一般是多任务同时执行,由于任务分布在不同的计算节点,所以能真正实现并行计算。
+  我们将整个集群并行执行任务的数量称为并行度。
+  一个作业的并行度到底是多少呢？这个取决于框架的默认配置;应用程序也可以在运行过程中修改。
+
+4.3.3 有向无环图(DAG)
+    大数据计算框架根据使用方式分为大概四类:
+    1. mapreduce

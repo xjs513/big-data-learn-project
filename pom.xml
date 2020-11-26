@@ -15,6 +15,7 @@
         <module>spark-learn-project</module>
         <module>flink-learn-project</module>
         <module>scala-learn-project</module>
+        <module>spark3-learn-pro</module>
     </modules>
     <packaging>pom</packaging>
 
