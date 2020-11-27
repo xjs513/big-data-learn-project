@@ -3,6 +3,10 @@ package com.atguigu.bigdata.spark.core.rdd
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 
+/**
+  * TODO 集合数据如何默认分区数如何确定
+  * TODO 以及分区数据分配如何确定
+  */
 object Spark04_RDD_Memory_PartitionData {
   def main(args: Array[String]): Unit = {
     // todo : Spark 创建运行环境
@@ -62,7 +66,7 @@ object Spark04_RDD_Memory_PartitionData {
       * 5. Array 的 slice（from:Int, util:Int） 方法
       */
 
-    /** [0, 1, 2] ==> (0, 1) (1, 3) (3, 5)
+    /** [0, 1, 2] ==> (0, 1) (1, 2) (2, 5)
      def positions(length: Long, numSlices: Int): Iterator[(Int, Int)] = {
        (0 until numSlices).iterator.map { i =>
          val start = ((i * length) / numSlices).toInt

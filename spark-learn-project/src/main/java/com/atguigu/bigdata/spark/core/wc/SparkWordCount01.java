@@ -1,4 +1,4 @@
-package com.atguigu.bigdata.spark.core.wordcount;
+package com.atguigu.bigdata.spark.core.wc;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;

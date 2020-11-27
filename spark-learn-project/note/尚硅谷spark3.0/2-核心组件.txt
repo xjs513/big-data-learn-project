@@ -7,11 +7,12 @@ Driver & Executor 计算相关
    Driver 在 Spark 作业执行时主要负责:
    》 将用户程序转化为作业(job)
    》 在 Executor 之间调度任务(task)
-   》 跟踪 Executor 的执行情况
+   》 跟踪 Executor 中任务的执行情况
    》 通过 UI 展示作业运行情况
    实际上我们无法准确描述其定义, 因为在开发过程中没有任何 Driver 相干的字眼。
-   简单理解: 就是驱动整个应用行动起来的程序, 也成为 Driver 类。
+   简单理解: 就是驱动整个应用行动起来的程序, 也称为 Driver 类。
 2. Executor
+   》 一个JAVA进程
    》 负责运行具体任务, 并将结果返回给驱动器进程
    》 通过自身的块管理器(Block Manager)为用户程序中要求缓存的 RDD 提供内存式存储。
       RDD 是直接缓存在 Executor 进程内的, 因此缓存可以加速任务计算。
@@ -38,3 +39,16 @@ ApplicationMaster => AM
 4.3.3 有向无环图(DAG)
     大数据计算框架根据使用方式分为大概四类:
     1. mapreduce
+
+
+5. spark 核心编程
+RDD 累加器 广播变量
+RDD的设计体现了装饰着设计模式,和IO有异曲同工之妙
+
+RDD 5 大核心属性
+1. a list of partitions 分区列表 getPartitions()
+2. a function for computing each split 分区的计算函数
+3. a list of dependencies on other RDDs
+4. optionally, a Partitioner for key-value RDDs
+5. optionally, a list of preferred locations to
+   compute each split on.
