@@ -15,7 +15,12 @@ object Spark01_RDD_Memory {
 
     println(rdd.partitions.length)
 
-    rdd.saveAsTextFile("data\\output\\Spark03_RDD_Memory_Par")
+    // spark 3.0.0 运行报错,2.4.4 和 2.4.5 可以
+    rdd.saveAsTextFile("spark-learn-project\\data\\output\\Spark01_RDD_Memory")
+
+    // spark-learn-project\data\input\spark_01\*.txt
+
+//    rdd.collect().foreach(println)
 
     sc.stop()
   }

@@ -30,6 +30,9 @@ object Spark05_RDD_File_Par {
 //    fileRdd4.saveAsTextFile("data\\output\\fileRdd4")
 
     val lines: RDD[String] = sc.textFile("data\\input\\spark_01\\line.txt")
+
+    // scheduler.conf.getInt("spark.default.parallelism", totalCores)
+
     println("fileRdd4 partitions:" + lines.partitions.length)
     lines.saveAsTextFile("data\\output\\lines")
 

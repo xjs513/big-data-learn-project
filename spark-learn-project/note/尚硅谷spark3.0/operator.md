@@ -1,10 +1,28 @@
 ## 算子
+
+转换: 功能的补充和封装,将旧的RDD包装成新的RDD
+行动: 触发作业的执行和任务的调度
+
+RDD的一系列方法我们称为:算子
+
 认知心理学，解决问题的思路其实就时改变问题的状态
 
 问题(初始) ========> 问题(处理中) ========> 问题(解决)
 
+转换算子根据数据处理方式的不同分为三种:
+Value类型、 双Value类型、 Key-Value类型
+
 #### 单 Value 转换算子
 1.  map
+> 函数签名
+```java
+def map[U: ClassTag](f: T => U): RDD[U] = withScope {
+  val cleanF = sc.clean(f)
+  new MapPartitionsRDD[U, T](this, (_, _, iter) => iter.map(cleanF))
+}
+```
+
+
 2.  mapPartitions
 3.  mapPartitionsWithIndex
 4.  flatMap
@@ -15,8 +33,8 @@
 9.  distinct    源码调用 reduceByKey
 10. coalesce
 11. repartition 源码调用 coalesce
-12. sortBy  特殊的转换算子  底层出发了执行
-13. pip
+12. sortBy      特殊的转换算子  底层触发了执行
+13. pip         可以调用一段 shell 脚本
 
 #### 双 Value 转换算子
 14. intersection 交集
@@ -27,8 +45,7 @@
 #### KV-转换算子 
  > 洗牌操作一定会在磁盘落地
  > 一个分区对应一个 task ，
- > 如果上下游两个 task 无需等待，
- > 则可以合并成一个task
+ > 如果上下游两个 task 无需等待，则可以合并成一个task
  > 如果有 洗牌 过程，则必须要等待，则 task 不能合并成一个任务
 18. partitionBy
 19. reduceByKey     源码调用combineByKeyWithClassTag    分区内的预聚合功能  ==Combiner==  
@@ -111,5 +128,6 @@ reduceByKey groupByKey aggregateByKey foldByKey combineByKey
 9)	countByKey
 10)	save相关算子
 11)	foreach
+12) foreachPartition
 
 转换算子和行动算子的区别并非十分严格 sortBy???

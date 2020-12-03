@@ -21,12 +21,17 @@ object Spark02_RDD_File {
     // Spark 读取文件默认采用 Hadoop 读取文件的规则
     // 逐行读取
     val fileRdd: RDD[String] = sc.textFile("data\\input\\spark_01\\*.txt")
+//
+//    println(fileRdd.partitions.length)
+//
+    // fileRdd.foreach(println)
 
-    println(fileRdd.partitions.length)
+    fileRdd.saveAsTextFile("data\\output\\Spark02_RDD_File")
 
-    fileRdd.foreach(println)
 
-    // fileRdd.saveAsTextFile("data\\output\\Spark03_RDD_Memory_Par")
+    // 以文件为单位读取数据 返回文件路径和文件内容的元组
+    // val rdd: RDD[(String, String)] = sc.wholeTextFiles("spark-learn-project\\data\\input\\spark_01")
+    // rdd.foreach(println)
 
     sc.stop()
   }
