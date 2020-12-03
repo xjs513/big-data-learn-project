@@ -22,7 +22,7 @@ ApplicationMaster => AM
 
 4.3 核心概念
 
-4.3.1 Executor 与 Core
+4.3.1 Executor 与 Core P20
     Executor 是运行在工作节点的一个 JVM 进程, 是集群中的计算节点。
     提交应用时,可以提供参数指定计算节点的个数以及对应的资源。
     这里的资源指的是工作节点 Executor 的内存大小和使用的 虚拟 CPU 核心数(Core)
