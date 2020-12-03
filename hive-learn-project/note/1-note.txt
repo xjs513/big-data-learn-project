@@ -1,0 +1,227 @@
+登录:
+# beeline
+!connect jdbc:hive2://dev201:10000
+
+!connect jdbc:hive2://mosh-data-1:10000
+
+输入用户名, 可能影响后续脚本执行权限问题，密码可以为空
+
+Hello, I know you are "runoob"!
+
+Hive支持的文件格式与压缩算法
+http://www.voidcn.com/article/p-pnwsungb-bsb.html
+Hadoop上常用压缩格式对比：
+
+压缩格式	扩展名	多文件	支持切片	压缩比排行	解压速度排行	工具	    hadoop自带
+gzip	.gz	    否	    否	    2	        3	        gzip	是
+bzip2	.bz2	是	    是	    1	        4	        bzip2	是
+lzo	    .lzo	否	    是	    3	        2	        lzop	否
+snappy	.snappy	否	    否	    4	        1	        无	    否
+
+概述
+只要是配置了正确的文件类型和压缩类型(比如Textfile+Gzip、SequenceFile+Snappy等)，Hive都可以按预期读取并解析数据，提供SQL功能。
+
+SequenceFile本身的结构已经设计了内容进行压缩。所以对于SequenceFile文件的压缩，并不是先生成SequenceFile文件，再对文件进行压缩。
+而是生成SequenceFile文件时，对其中的内容字段进行压缩。最终压缩后，对外仍体现为一个SequenceFile。
+RCFile、ORCFile、Parquet、Avro对于压缩的处理方式与SequenceFile相同。
+
+文件格式:Textfile,SequenceFile,RCFile,ORCFile,Parquet,Avro
+
+压缩算法的编解码器
+序号	压缩格式	算法	    多文件	可分割性	        工具	    工具压缩后扩展名
+1	DEFLATE	DEFLATE	不	    不	            无	    .deflate
+2	Gzip	DEFLATE	不	    不	            gzip	.gz
+3	bzip2	bzip2	不	    是	            bzip2	.bz2
+4	LZO	    LZO	    不	    不	            lzop	.lzo
+5	LZ4	    ???	    ??	    ??	            ???	    ???
+6	Snappy	???	    ??	    ??	            ???	    ???
+7	ZLIB	???	    ??	    ??	            ???	    ???
+8	ZIP	    DEFLATE	是	    是，在文件范围内	zip	    .zip
+
++--------+--+
+|  cnt   |
++--------+--+
+| 68288  |
++--------+--+
+
++--------+-------------+--+
+|  cnt   |     ds      |
++--------+-------------+--+
+| 2873   | 2020-11-20  |
+| 2891   | 2020-11-24  |
+| 2647   | 2020-11-25  |
+| 2543   | 2020-11-26  |
+| 2464   | 2020-11-27  |
+| 2377   | 2020-11-28  |
+| 2981   | 2020-11-29  |
+| 2571   | 2020-11-30  |
+| 2323   | 2020-12-01  |
+| 2374   | 2020-12-02  |
+| 42244  | 2020-12-03  |
++--------+-------------+--+
+---------------------------------------文本文件,不压缩--------------------------------------------------------
+DROP TABLE if EXISTS kasa_warehouse.fliggy_order_text;
+CREATE TABLE `fliggy_order_text`(
+-- 需要的原始字段 16 个 日期:24 25
+`order_no`                 string         COMMENT '订单编号',
+`order_status`             string         COMMENT '订单状态',
+`goods_title`              string         COMMENT '宝贝标题',
+`goods_att`                string         COMMENT '商品属性',
+`total_number_of_cnt`      BIGINT         COMMENT '宝贝总数量',
+`buyer_paid_order_amt`     decimal(38,20) COMMENT '买家实际支付金额',
+`store_name`               string         COMMENT '店铺名称',
+`order_creation_time`      string         COMMENT '订单创建时间',
+`order_payment_time`       string         COMMENT '订单付款时间',
+`modified`                 string         COMMENT '订单修改时间',
+`consignee_name`           string         COMMENT '收货人 受托人 承销人 受货人 代售人',
+`buyer_message`            string         COMMENT '买家留言 ',
+`shipping_address`         string         COMMENT '收货地址',
+`type`                     string         COMMENT '类型:fixed eticket step',
+`o2o_step_trade_detail_new` string        COMMENT '分阶段订单信息',
+`step_trade_status`        string         COMMENT '分阶段订单状态',
+-- 需要解析的字段 12 个
+`check_in_date`                  string         COMMENT '入住日期',
+`is_today`                       BIGINT         COMMENT '类型 当日=1 预定=0',
+`advance_booking_days_cnt`       BIGINT         COMMENT '提前预定天数',
+`company_code`                   string         COMMENT '子公司编码',
+`company_name`                   string         COMMENT '子公司名称',
+`company_region`                 string         COMMENT '子公司区域编码',
+`plate_type`                     string         COMMENT '子公司板块编码',
+`phone_no`                       string         COMMENT '手机号,买家留言、收货地址、取联系电话、联系手机',
+`order_province`                 string         COMMENT '省份, 从手机号解析',
+`order_city`                     string         COMMENT '城市, 从手机号解析',
+`order_status_code`              bigint         COMMENT '订单状态编码',
+`room_cnt`                       BIGINT         COMMENT '房晚数',
+`ds`                             string         COMMENT '日期, 分区字段, 比如:2020-01-01')
+STORED AS TEXTFILE;
+输入数据
+insert into fliggy_order_text select * from dwd_chimelong.dwd_fliggy_order_detail;
+select count(*) as cnt from fliggy_order_text;
+---------------------------------------文本文件,Snappy压缩--------------------------------------------------------
+CREATE TABLE `fliggy_order_text_snappy`(
+-- 需要的原始字段 16 个 日期:24 25
+`order_no`                 string         COMMENT '订单编号',
+`order_status`             string         COMMENT '订单状态',
+`goods_title`              string         COMMENT '宝贝标题',
+`goods_att`                string         COMMENT '商品属性',
+`total_number_of_cnt`      BIGINT         COMMENT '宝贝总数量',
+`buyer_paid_order_amt`     decimal(38,20) COMMENT '买家实际支付金额',
+`store_name`               string         COMMENT '店铺名称',
+`order_creation_time`      string         COMMENT '订单创建时间',
+`order_payment_time`       string         COMMENT '订单付款时间',
+`modified`                 string         COMMENT '订单修改时间',
+`consignee_name`           string         COMMENT '收货人 受托人 承销人 受货人 代售人',
+`buyer_message`            string         COMMENT '买家留言 ',
+`shipping_address`         string         COMMENT '收货地址',
+`type`                     string         COMMENT '类型:fixed eticket step',
+`o2o_step_trade_detail_new` string        COMMENT '分阶段订单信息',
+`step_trade_status`        string         COMMENT '分阶段订单状态',
+-- 需要解析的字段 12 个
+`check_in_date`                  string         COMMENT '入住日期',
+`is_today`                       BIGINT         COMMENT '类型 当日=1 预定=0',
+`advance_booking_days_cnt`       BIGINT         COMMENT '提前预定天数',
+`company_code`                   string         COMMENT '子公司编码',
+`company_name`                   string         COMMENT '子公司名称',
+`company_region`                 string         COMMENT '子公司区域编码',
+`plate_type`                     string         COMMENT '子公司板块编码',
+`phone_no`                       string         COMMENT '手机号,买家留言、收货地址、取联系电话、联系手机',
+`order_province`                 string         COMMENT '省份, 从手机号解析',
+`order_city`                     string         COMMENT '城市, 从手机号解析',
+`order_status_code`              bigint         COMMENT '订单状态编码',
+`room_cnt`                       BIGINT         COMMENT '房晚数',
+`ds`                             string         COMMENT '日期, 分区字段, 比如:2020-01-01')
+STORED AS TEXTFILE;
+--设置压缩
+SET hive.exec.compress.output=true;
+SET mapred.compress.map.output=true;
+SET mapred.output.compress=true;
+SET mapred.output.compression=org.apache.hadoop.io.compress.SnappyCodec;
+SET mapred.output.compression.codec=org.apache.hadoop.io.compress.SnappyCodec;
+SET io.compression.codecs=org.apache.hadoop.io.compress.SnappyCodec;
+输入数据
+insert into fliggy_order_text_snappy select * from fliggy_order_text;
+select * from fliggy_order_text_snappy limit 10;
+---------------------------------------parquet,不压缩--------------------------------------------------------
+CREATE TABLE `fliggy_order_parquet`(
+-- 需要的原始字段 16 个 日期:24 25
+`order_no`                 string         COMMENT '订单编号',
+`order_status`             string         COMMENT '订单状态',
+`goods_title`              string         COMMENT '宝贝标题',
+`goods_att`                string         COMMENT '商品属性',
+`total_number_of_cnt`      BIGINT         COMMENT '宝贝总数量',
+`buyer_paid_order_amt`     decimal(38,20) COMMENT '买家实际支付金额',
+`store_name`               string         COMMENT '店铺名称',
+`order_creation_time`      string         COMMENT '订单创建时间',
+`order_payment_time`       string         COMMENT '订单付款时间',
+`modified`                 string         COMMENT '订单修改时间',
+`consignee_name`           string         COMMENT '收货人 受托人 承销人 受货人 代售人',
+`buyer_message`            string         COMMENT '买家留言 ',
+`shipping_address`         string         COMMENT '收货地址',
+`type`                     string         COMMENT '类型:fixed eticket step',
+`o2o_step_trade_detail_new` string        COMMENT '分阶段订单信息',
+`step_trade_status`        string         COMMENT '分阶段订单状态',
+-- 需要解析的字段 12 个
+`check_in_date`                  string         COMMENT '入住日期',
+`is_today`                       BIGINT         COMMENT '类型 当日=1 预定=0',
+`advance_booking_days_cnt`       BIGINT         COMMENT '提前预定天数',
+`company_code`                   string         COMMENT '子公司编码',
+`company_name`                   string         COMMENT '子公司名称',
+`company_region`                 string         COMMENT '子公司区域编码',
+`plate_type`                     string         COMMENT '子公司板块编码',
+`phone_no`                       string         COMMENT '手机号,买家留言、收货地址、取联系电话、联系手机',
+`order_province`                 string         COMMENT '省份, 从手机号解析',
+`order_city`                     string         COMMENT '城市, 从手机号解析',
+`order_status_code`              bigint         COMMENT '订单状态编码',
+`room_cnt`                       BIGINT         COMMENT '房晚数',
+`ds`                             string         COMMENT '日期, 分区字段, 比如:2020-01-01')
+STORED AS parquet;
+输入数据
+insert into fliggy_order_parquet select * from fliggy_order_text;
+select count(*) as cnt from fliggy_order_parquet;
+---------------------------------------parquet,Snappy压缩--------------------------------------------------------
+CREATE TABLE `fliggy_order_parquet_snappy`(
+-- 需要的原始字段 16 个 日期:24 25
+`order_no`                 string         COMMENT '订单编号',
+`order_status`             string         COMMENT '订单状态',
+`goods_title`              string         COMMENT '宝贝标题',
+`goods_att`                string         COMMENT '商品属性',
+`total_number_of_cnt`      BIGINT         COMMENT '宝贝总数量',
+`buyer_paid_order_amt`     decimal(38,20) COMMENT '买家实际支付金额',
+`store_name`               string         COMMENT '店铺名称',
+`order_creation_time`      string         COMMENT '订单创建时间',
+`order_payment_time`       string         COMMENT '订单付款时间',
+`modified`                 string         COMMENT '订单修改时间',
+`consignee_name`           string         COMMENT '收货人 受托人 承销人 受货人 代售人',
+`buyer_message`            string         COMMENT '买家留言 ',
+`shipping_address`         string         COMMENT '收货地址',
+`type`                     string         COMMENT '类型:fixed eticket step',
+`o2o_step_trade_detail_new` string        COMMENT '分阶段订单信息',
+`step_trade_status`        string         COMMENT '分阶段订单状态',
+-- 需要解析的字段 12 个
+`check_in_date`                  string         COMMENT '入住日期',
+`is_today`                       BIGINT         COMMENT '类型 当日=1 预定=0',
+`advance_booking_days_cnt`       BIGINT         COMMENT '提前预定天数',
+`company_code`                   string         COMMENT '子公司编码',
+`company_name`                   string         COMMENT '子公司名称',
+`company_region`                 string         COMMENT '子公司区域编码',
+`plate_type`                     string         COMMENT '子公司板块编码',
+`phone_no`                       string         COMMENT '手机号,买家留言、收货地址、取联系电话、联系手机',
+`order_province`                 string         COMMENT '省份, 从手机号解析',
+`order_city`                     string         COMMENT '城市, 从手机号解析',
+`order_status_code`              bigint         COMMENT '订单状态编码',
+`room_cnt`                       BIGINT         COMMENT '房晚数',
+`ds`                             string         COMMENT '日期, 分区字段, 比如:2020-01-01')
+STORED AS parquet;
+--设置压缩
+set parquet.compression=snappy;  也可以在建表是添加属性：STORED AS ORC TBLPROPERTIES ("parquet.compression"="snappy")
+--导入数据
+insert overwrite table  fliggy_order_parquet_snappy select * from fliggy_order_text;
+--查询数据
+SELECT * FROM fliggy_order_parquet_snappy;
+select count(*) as cnt from fliggy_order_parquet_snappy;
+---------------------------------------表文件大小--------------------------------------------------------
+text-compress        size
+textFile             35.03 MB
+parquet              15.39 MB
+textFile-snappy      8.01 MB
+parquet-snappy       5.24 MB
