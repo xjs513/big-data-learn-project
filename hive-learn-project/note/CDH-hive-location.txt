@@ -1,0 +1,32 @@
+CDH中运行的hive脚本究竟在哪里?
+
+
+# Reference: http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
+
+# whereis hive
+/usr/bin/hive 这里是启动脚本, 是一个软链接
+/etc/hive     这里是配置
+
+[root@mosh-data-3 ~]# ll /usr/bin/hive
+lrwxrwxrwx 1 root root 22 Jan 22  2019 /usr/bin/hive ->
+
+添加 echo "111" 可以发现确实执行了此脚本,但它调用了别的脚本
+/opt/cloudera/parcels/CDH-5.12.0-1.cdh5.12.0.p0.29/bin/../lib/hive
+就是这个目录, 最终调用的它下面的 ./bin/hive 脚本
+------------------------------------------------------------------------------
+Beeline version 1.1.0-cdh5.12.0 by Apache Hive
+# add Spark assembly jar to the classpath
+if [[ -n "$SPARK_HOME" && !("$HIVE_SKIP_SPARK_ASSEMBLY" = "true") ]]
+then
+  sparkAssemblyPath=`ls ${SPARK_HOME}/jars/*.jar`
+  CLASSPATH="${CLASSPATH}:${sparkAssemblyPath}"
+fi
+------------------------------------------------------------------------------
+Beeline version branch-1.2 by Apache Hive  很多版本没有这段添加 spark jar包到 classpath 的代码
+# add Spark assembly jar to the classpath
+if [[ -n "$SPARK_HOME" ]]
+then
+  sparkAssemblyPath=`ls ${SPARK_HOME}/lib/spark-assembly-*.jar`
+  CLASSPATH="${CLASSPATH}:${sparkAssemblyPath}"
+fi
+------------------------------------------------------------------------------

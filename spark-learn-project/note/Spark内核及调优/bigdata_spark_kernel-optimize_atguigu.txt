@@ -1,0 +1,111 @@
+https://www.bilibili.com/video/BV1fE411E7Ak
+
+第一部分: Spark 内核
+第1章 Spark 内核概述
+1.1 Spark核心组件回顾
+1.1.1 ClusterManager(Master, ResourceManager)
+Spark 的集群管理器, 主要负责对整个集群资源的分配与管理。
+ClusterManager在Yarn部署模式下为ResourceManager；
+在Mesos部署模式下为Mesos Master;
+在Standalone部署模式下为Master.
+ClusterManager分配的资源属于一级分配，将各个Worker上
+的内存、CPU等资源分配给Application，但并不负责对
+Executor的资源分配。
+
+1.1.2 Worker(Worker, NodeManager)
+Spark 的工作节点。
+在Yarn部署模式下实际由NodeManager替代；
+主要负责以下工作：
+> 将自己的内存、cpu等资源通过注册机制告诉ClusterManager
+> 创建Executor
+> 将资源和任务进一步分配给Executor
+> 同步资源信息、Executor状态信息给ClusterManager等。
+
+1.1.3 Driver
+Spark驱动器节点，用于执行Spark任务中的main方法，负责实际代码执行。
+Driver在Spark作业执行时主要负责：
+1. 将用户程序转化为 Job
+2. 在 Executor 之间调度 Task
+3. 跟踪 Executor 的执行情况
+4. 通过 UI 展示查询运行情况 4040端口
+
+1.1.4 Executor
+Spark Executor 节点负责在作业中运行具体任务，任务彼此独立。
+Spark 应用启动时，Executor 节点被同时启动，并且始终伴随着
+Spark 应用的生命周期存在。
+如果 Executor 节点发生故障或崩溃，Spark应用也可以继续执行，
+会将出错节点上的任务调度到其他Executor节点继续运行。
+Executor 两个核心功能：
+1. 负责运行组成Spark应用的任务，并返回结果给Driver；
+2. 通过自身的块管理器（Block Manager）为用户程序中要求缓存
+   的RDD提供内存式存储。RDD是直接缓存在Executor进程内的，
+   因此任务可以在运行期间充分利用缓存数据加速运算。
+
+
+1.1.5 Application
+用户使用Spark API 编写的应用程序。
+》 Application 通过 Spark API 进行 RDD的转换和DAG的构建，
+   并通过Driver将Application注册到Cluster Manager。
+》 Cluster Manager根据Application的资源需求，通过一级分配
+   将Executor、内存、CPU等资源分配给Application
+》 Driver通过二级分配将Executor等资源分配给每一个任务，
+   Application最后通过Driver告诉Executor运行任务
+
+1.2 Spark通用运行流程概述 比较粗糙
+https://www.bilibili.com/video/BV1fE411E7Ak 8:31秒的图
+这是Spark通用运行流程，无论何种部署模式，都是如下核心步骤：
+1. 任务提交后，启动Driver;
+2. 随后Driver向集群管理器注册应用程序；
+3. 之后集群管理器根据任务的配置文件分配Executor并启动该应用程序，反向注册到Driver;
+4. 当Driver所需资源满足后，执行main函数，遇到Action算子时开始反向推算，
+   根据依赖关系划分Stage,随后每一个Stage对应一个TaskSet，TaskSet中有多个Task;
+5. 根据本地化原则，Task会被分发到指定的Executor执行，在执行过程中，
+   Executor会不断与Driver进行通信，报告任务运行情况。
+
+第2章 Spark 通讯架构概述
+Spark 内置 RPC 框架
+在 Spark 中，很多地方都涉及到网络通讯，比如各个组件的通信，用户文件与jar包的上传，
+节点间的shuffle过程，Block数据的复制与备份等。
+1. 在Spark0.x.x 与 Spark1.x.x版本中，组件间的通信主要用Akka.
+2. 在Spark1.3中引入了Netty.
+   Akka要求message的发送端和接收端有相同的版本，为了避免Akka版本问题，并给
+   用户应用更大灵活性,决定采用更通用的RPC实现，也就时Netty代替Akka.
+3. Spark1.6 中Akka 和 Netty可以配置使用。Netty 完全实现了 Akka 在Spark中的功能。
+4. Spark2.0 中 Akka被移除。！！~~~
+
+Akka通信模型通过 Actor 和 Mailbox实现
+
+Netty借鉴了Akka的Actor模型
+Spark通讯框架中各个组件（Client/Master/Worker）可以认为是一个个
+独立的实体，彼此之间通过消息来进行通信。
+EndPoint 有1个InBox和N个OutBox（N>=1,N取决于当前EndPoint与多少
+其他EndPoint进行通信），EndPoint接收的消息被写入到InBox，发送的消息
+写入到OutBox并被发送到其他EndPoint的InBox中。
+-----------------------------------------------------------------------------
+https://www.bilibili.com/video/BV1fE411E7Ak?p=4 5 6
+Master & Worker 启动流程分析
+$SPARK_HOME/sbin/start-all.sh
+1. start-master.sh => java -cp org.apache.spark.deploy.master.Master
+2. start-slaves.sh => java -cp org.apache.spark.deploy.worker.Worker
+Master:
+3. create() -> RpcEnv
+4. setupEndPoint() -> MasterEndPoint
+
+9. addressToWorker [WorkerInfo[host, point, ...]]
+10. reply(RegisteredWorker)
+
+Worker:
+5. create() -> RpcEnv
+6. setupEndPoint() -> WorkerEndPoint
+7. setupEndPointRef() -> MasterEndPointRef
+8. ask(RegisterWorker)
+
+11. send(Heartbeat)
+
+
+
+Spark源码分析-Master的onStart()方法是什么时候调用的？
+https://blog.csdn.net/weixin_43616627/article/details/104215356
+创建EndpointData的时候，会初始化Inbox对象：OnStart should be the first message to process
+
+

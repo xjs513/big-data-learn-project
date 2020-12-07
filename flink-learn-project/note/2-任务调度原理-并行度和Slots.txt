@@ -1,0 +1,79 @@
+https://www.bilibili.com/video/BV19K4y1f7of?p=15
+
+任务调度原理.png
+思考:
+* 怎样实现并行计算？
+* 并行的任务，需要占用多少Slots？
+  并行的子任务需要分配到不同的 slots 上去运行。
+* 一个流处理程序，到底包含多少个任务？
+  有的任务可以合并，有的 slot 可以共享。
+
+# 并行度
+Parallelism.png
+* 一个特定算子的子任务（subtask）的个数成为算子的并行度(parallelism)。
+  一般情况下，一个stream的并行度，就是其所有算子中最大的并行度。
+TaskManager-Slots.png
+* Slot 是资源分配管理的固定大小的一组资源，再具体就是内存+core,主要是内存, core无法隔离
+
+* Flink 中的TaskManager是JVM进程，它可能会在独立的线程上执行一个或多个子任务
+* 为了控制一个TaskManager能够接受多少个task,TaskManager通过task slot来进行控制。
+
+* 默认情况下，Flink允许子任务共享slot,即使是不同任务的子任务。
+  因此，一个slot可以保存作业的整个管道。
+* Task Slot 是静态的概念，是指TaskManager具有的并发执行能力。
+
+如果算子中有一个耗时的运算(比如:开窗聚合)
+如果每个任务都分配单独的slot,则都在等那个耗时的操作, 前面的数据会产生挤压, 忙死闲死
+所以要搭配好, 并行度和耗时操作保持一致，避免管道空闲。
+
+并行子任务的分配.png
+
+Slot 共享会造成大量 Slots 空闲。
+
+那些任务可以合在一起，那些不能合？
+
+# 程序与数据流 DataFlow  **## 没有 stage  的概念
+* 所有的 Flink 程序由三部分组成：Source Transformation Sink
+* Source 读取数据源，Transformation 利用各种算子进行加工处理，Sink 负责输出。
+* Flink 上运行的程序映射成“逻辑数据流”（dataflows）,它包含 了这三部分。
+* dataflow以一个或多个source开始以一个或多个Sink结束。类比DAG。
+* 大部分情况下，程序中的转换运算(transformations)跟dataflow中的算子(operator)一一对应。
+
+# 执行图(ExecutionGraph)
+执行图的转换生成.png
+* Flink 中的执行图可以分成四层:
+  StreamGraph -> JobGraph -> ExecutionGraph -> 物理执行图
+  > StreamGraph: 根据 Stream API 编写的代码生成的最初的图。表示程序的拓扑结构。
+  > JobGraph: StreamGraph 经过优化后生成 JobGraph, 是提交给 JobManager 的数据结构。
+    主要的优化为:将多个符合条件的节点chain在一起作为一个节点。
+  > ExecutionGraph: JobManager 根据 JobGraph 生成 ExecutionGraph。
+    ExecutionGraph 是 JobGraph 的并行化版本, 是调度层最核心的数据结构。
+  > 物理执行图: JobManager 根据 ExecutionGraph 对 Job 进行调度后,
+    在各个 TaskManager 上部署 Task 后形成的"图", 并不是一个具体的数据结构。
+
+# 数据传输形式
+* 一个程序中，不同的算子可能具有不同的并行度
+* 算子之间传输数据的形式可以是 one-to-one(forwarding)的模式也可以是 redistributing 模式,
+  具体是哪一种取决于算子的种类
+  》 One-to-one: stream 维护着分区以及元素的顺序（比如source和map之间）。
+     这意味着map算子的子任务看到的元素的个数以及顺序跟source算子的子任务产生订单元素的个数、顺序相同。
+     map filter flatMap 都是这样的算子。
+  》 Redistributing: stream的分区会发生改变。每一个算子的子任务依据所选择的 transformation 发送
+     数据到不同的目标任务。例如：keyBy基于hashCode重分区、而broadcast和rebalance会随机重新分区，
+     这些算子都会引起 redistribute 过程，类似于 Spark 中的 shuffle 过程。
+  》 上下游并行度不一致的时候，也会发生 redistribute，轮询发送到下游。
+
+# 任务链(Operator Chains)
+* Flink 采用了一种称为任务链的优化技术，可以在特定条件下减少本地通信开销。
+  为了满足任务链的要求，必须将两个或多个算子设为相同的并行度，并通过本地转发（local forward）的方式进行连接。
+* 相同并行度的 one-to-one 操作，Flink 将这样相连的算子链接在一起形成一个 task，
+  原来的算子成为里面的 subtask。
+* 并行度相同并且是 one-to-one 操作，两个条件缺一不可。
+
+# 再认真看下 P19
+
+.disableChaining()
+.startNewChain()
+
+.slotSharingGroup("a") // 共享组
+
