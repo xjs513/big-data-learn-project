@@ -1,0 +1,125 @@
+尚硅谷课程:
+https://www.bilibili.com/video/BV19K4y1f7of?from=search&seid=10208372094786556452
+
+P6: 批处理 WordCount
+
+P7 P8: 流处理 WordCount 及相关扩展
+任务默认并行度, 开发环境是机器默认核心数, 生产环境看配置
+Flink 提供了丰富灵活的设置并行度的手段, 很多算子后面可以 .setParallelism(3)
+
+1. 代码中设置的算子并行度
+2. 代码中设置的全局并行度
+3. 提交任务时的 -p 参数
+4. 配置文件中的并行度
+5. 开发环境中机器默认核心数
+
+从外部命令中提取参数 如 socket 主机名和端口号
+ParameterTool parameterTool = ParameterTool.fromArgs(args);
+String host = parameterTool.get("host");
+int port = parameterTool.getInt("host");
+
+--host localhost --port 7777
+
+P9 Flink 集群部署 Standalone Yarn(Session|PerJob) K8s
+
+* 注意:如果 Slot 数量不够的话, 监控界面会显示一直转圈圈。
+Slot 是分配资源的最小单位, 执行任务必须的资源。
+
+# 命令行提交任务  Standalone
+./bin/flink run
+-c com.evente.WordCount \
+-p 2 \
+/mnt/d/Projects/FlinkTest.var \
+--host localhost \
+--port 7777
+# 命令行取消任务  Standalone
+./bin/flink cancel Job_id
+# 命令行查看任务  Standalone
+./bin/flink list [-a]
+
+# 启动 yarn-session
+./yarn-session.sh -n 2 -s 2 -jm 1024 -tm 1024 -nm test -d
+其中：
+-n(--container): TaskManager的数量 后来不用指定，可以动态申请
+-s(--slots):每个TaskManager的slot数量,默认一个slot一个core,
+            默认每个TaskManager的slot个数为1,
+            有时可以多一些TaskManager做冗余。
+-jm: JobManager 的内存, 单位MB。
+-tm: TaskManager 的内存, 单位MB。
+-nm: yarn 的 appName, UI界面上的任务名字
+-d : 后台运行
+# 提交任务和 Standalone 一模一样
+./bin/flink run
+-c com.evente.WordCount \
+-p 2 \
+-yid,--yarnapplicationId \
+/mnt/d/Projects/FlinkTest.var \
+--host localhost \
+--port 7777
+
+
+P13 Flink 运行时架构  都运行在JVM里面
+运行时组件: JobManager(作业管理器) TaskManager(任务管理器)
+          ResourceManager(资源管理器 Slots) dispatcher(分发器)
+
+JobManager(作业管理器)
+* 控制应用执行的主进程，每个应用程序都会被一个JobManager控制运行。
+* JobManager接收要执行的应用，包括：作业图（JobGraph）、
+  逻辑数据流图（logical data flow graph）和
+  打包了所有的类、库和其他资源的jar包。
+* JobManager会把JobGraph转换成一个物理层面的数据流图(Execution Graph),
+  包含了所有可以并发执行的任务。
+* JobManager想RM请求必要的资源(TaskManager上的Slot)。一旦获取了足够多
+  的资源，就会把执行图分发到TaskManager上。
+  而在运行过程中，JobManager会负责所有需要中央协调的操作，比如 checkpoint
+
+TaskManager
+* Flink中的工作进程。通常有多个，每个包含了一定的 Slots,
+  Slots的数量限制了TaskManager能够并行执行的任务数量。
+* 启动后向资源管理器注册它的 Slots,收到资源管理器的指令后，会将 Slots
+  提供给JobManager调用，JobManager就可以向Slots分配任务来执行了。
+* 执行过程中，同一个应用的TaskManager之间可以交换数据。
+
+Dispatcher
+* 可以跨作业运行，为应用提交提供了REST接。
+* 每当应用被提交时，分发器就会启动并将应用移交给一个JobManager。
+* 分发器也会启动一个Web UI,方便展示和监控作业执行情况。
+* 分发器在架构中不是必须的，这取决于应用提交运行的方式。
+
+
+任务提交流程 P14
+1. App提交应用
+2. Dispatcher启动并提交应用给JobManager  就这里用一下分发器
+3. JobManager向RM请求Slots
+4. RM启动TaskManager
+5. TaskManager反向到RM注册Slots信息
+6. RM向TaskManager发出向JobManager提供Slots的指令
+7. TaskManager向JobManager提供Slots
+8. JobManager提交要在Slots执行的任务
+9. 同一个应用的TaskManager之间交换数据
+
+任务提交流程(YARN) per-job
+1. Flink Client上传APP的jar包和相关配置
+2. Flink Client 向 RM提交 Job
+3. RM启动一个容器，并在其中启动AM，里面包含JobManager和Flink内部自己的ResourceManager
+4. JobManager向RM(内部)请求Slots,RM(内部)再向外部的RM启动TaskManager
+5. TaskManager反向到RM(内部)注册Slots信息
+6. RM(内部)向TaskManager发出向JobManager提供Slots的指令
+7. TaskManager向JobManager提供Slots
+8. JobManager提交要在Slots执行的任务
+9. 同一个应用的TaskManager之间交换数据
+
+
+任务调度原理
+
+
+
+P22 自定义 Source
+作用: 1. 测试业务逻辑是否正确时生成需要的数据
+     2. 从 MySQL Hive 中读取数据
+
+
+
+https://www.cnblogs.com/alexgl2008/articles/12411998.html
+flink kafka exactly once
+

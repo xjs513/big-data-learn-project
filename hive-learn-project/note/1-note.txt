@@ -225,3 +225,11 @@ textFile             35.03 MB
 parquet              15.39 MB
 textFile-snappy      8.01 MB
 parquet-snappy       5.24 MB
+
+
+
+lrwxrwxrwx  1 root root 59 Jan 22  2019 hive -> /opt/cloudera/parcels/CDH-5.12.0-1.cdh5.12.0.p0.29/bin/hive
+lrwxrwxrwx  1 root root 28 Oct 13 11:59 hive-conf -> /etc/hive/conf.cloudera.hive
+lrwxrwxrwx  1 root root 78 Jan 22  2019 hive-hcatalog-conf -> /opt/cloudera/parcels/CDH-5.12.0-1.cdh5.12.0.p0.29/etc/hive-hcatalog/conf.dist
+lrwxrwxrwx  1 root root 66 Jan 22  2019 hiveserver2 -> /opt/cloudera/parcels/CDH-5.12.0-1.cdh5.12.0.p0.29/bin/hiveserver2
+lrwxrwxrwx  1 root root 77 Jan 22  2019 hive-webhcat-conf -> /opt/cloudera/parcels/CDH-5.12.0-1.cdh5.12.0.p0.29/etc/hive-webhcat/conf.dist
