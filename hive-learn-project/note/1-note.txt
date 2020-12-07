@@ -4,6 +4,14 @@
 
 !connect jdbc:hive2://mosh-data-1:10000
 
+!connect jdbc:hive2://kasa:10000
+
+nohup hive --service metastore >/dev/null 2>&1 &
+
+nohup hive --service hiveserver2 >/dev/null 2>&1 & ## 这个启动比较慢, 要耐心等待一会儿！！！
+
+spark jars 下面的 hive 相关jar包冲突会有问题
+
 输入用户名, 可能影响后续脚本执行权限问题，密码可以为空
 
 Hello, I know you are "runoob"!
