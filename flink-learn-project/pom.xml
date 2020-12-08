@@ -61,7 +61,7 @@
             <version>${flink.version}</version>
         </dependency>
 
-        <!--  Scala 开发依赖
+        <!--  Scala 开发依赖 -->
 
         <dependency>
             <groupId>org.scala-lang</groupId>
@@ -78,7 +78,7 @@
             <artifactId>flink-streaming-scala_2.12</artifactId>
             <version>${flink.version}</version>
         </dependency>
- -->
+
         <dependency>
            <groupId>org.apache.flink</groupId>
            <artifactId>flink-clients_2.12</artifactId>

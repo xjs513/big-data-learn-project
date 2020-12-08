@@ -123,3 +123,5 @@ P22 自定义 Source
 https://www.cnblogs.com/alexgl2008/articles/12411998.html
 flink kafka exactly once
 
+这个博客写的好:::
+https://www.cnblogs.com/qiu-hua/p/13412848.html

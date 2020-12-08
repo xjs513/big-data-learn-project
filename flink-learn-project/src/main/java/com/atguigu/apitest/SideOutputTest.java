@@ -68,7 +68,7 @@ class SplitTempProcessor extends ProcessFunction<SensorReading, SensorReading>{
 
     private double threshold;
 
-    public SplitTempProcessor(double threshold){
+    SplitTempProcessor(double threshold){
         this.threshold = threshold;
     }
 
