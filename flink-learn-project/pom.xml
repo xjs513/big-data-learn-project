@@ -62,7 +62,6 @@
         </dependency>
 
         <!--  Scala 开发依赖 -->
-
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>

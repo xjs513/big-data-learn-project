@@ -3,7 +3,7 @@ package com.flink
 import org.apache.flink.api.common.eventtime._
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.scala._
-import org.apache.flink.streaming.api.scala.function.WindowFunction
+import org.apache.flink.streaming.api.scala.function.{ProcessWindowFunction, WindowFunction}
 import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow
 import org.apache.flink.util.Collector
@@ -64,12 +64,22 @@ object WatermarkTest3 {
     )
         .keyBy(_.id)
         .timeWindow(Time.seconds(5))
-        .apply(new WindowFunction[SensorReading,Object,String,TimeWindow] {
-          override def apply(key: String, window: TimeWindow, input: Iterable[SensorReading], out: Collector[Object]): Unit = {
-            println("window : [" + window.getStart + ", " + window.getEnd + "]")
-            input.foreach(s => out.collect(s))
-          }
-        })
+      .process(new ProcessWindowFunction[SensorReading,Object,String,TimeWindow] {
+        override def process(key: String, context: Context, elements: Iterable[SensorReading], out: Collector[Object]): Unit = {
+          context.currentWatermark
+        }
+
+        onTi
+
+      })
+
+
+//        .apply(new WindowFunction[SensorReading,Object,String,TimeWindow] {
+//          override def apply(key: String, window: TimeWindow, input: Iterable[SensorReading], out: Collector[Object]): Unit = {
+//            println("window : [" + window.getStart + ", " + window.getEnd + "]")
+//            input.foreach(s => out.collect(s))
+//          }
+//        })
 
 
     ds.print()
