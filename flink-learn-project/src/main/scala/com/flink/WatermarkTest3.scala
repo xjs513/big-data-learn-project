@@ -1,5 +1,6 @@
 package com.flink
 
+import com.flink.UtilCaseClasses.SensorReading
 import org.apache.flink.api.common.eventtime._
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.scala._
@@ -68,8 +69,6 @@ object WatermarkTest3 {
         override def process(key: String, context: Context, elements: Iterable[SensorReading], out: Collector[Object]): Unit = {
           context.currentWatermark
         }
-
-        onTi
 
       })
 

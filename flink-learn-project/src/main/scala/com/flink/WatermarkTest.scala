@@ -2,6 +2,7 @@ package com.flink
 
 import java.time.Duration
 
+import com.flink.UtilCaseClasses.SensorReading
 import org.apache.flink.api.common.eventtime.{SerializableTimestampAssigner, WatermarkGeneratorSupplier, WatermarkStrategy}
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.scala._
@@ -12,8 +13,6 @@ import org.apache.flink.streaming.runtime.operators.util.AssignerWithPeriodicWat
   * @date : 2020/12/8 16:17  
   * @descripthon :
   */
-
-case class SensorReading(id:String, timestamp:Long, temperature:Double)
 
 object WatermarkTest {
   def main(args: Array[String]): Unit = {

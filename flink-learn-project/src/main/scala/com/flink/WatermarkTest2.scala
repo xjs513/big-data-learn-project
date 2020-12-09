@@ -1,5 +1,6 @@
 package com.flink
 
+import com.flink.UtilCaseClasses.SensorReading
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks
 import org.apache.flink.streaming.api.scala._
