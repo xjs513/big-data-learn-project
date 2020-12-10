@@ -1,0 +1,106 @@
+创建 TableEnviroment
+    val tableEnv = StreamTableEnvironment.create(env)
+TableEnviroment 是 Flink 中 Table API 和 SQL 的核心概念, 所有表操作都基于此。
+-- 注册 Catalog
+-- 在 Catalog 中注册表
+-- 执行 SQL 查询
+-- 注册UDF
+
+表 (Table)
+* TableEnvironment 可以注册 Catalog, 然后基于 Catalog 注册表
+* 表[Table]是由一个"标识符"(identifier)来指定的,
+  由Catalog名、数据库(database)名和对象名三部分组成
+* 表可以是常规的, 也可以是虚拟的(View)
+* 常规表一般可以用来描述外部数据,比如文件、数据库表或消息队列的数据,
+  也可以直接从DataStream转换而来
+* 视图可以从现有表创建,通常是 Table API 或 SQL 查询的一个结果集
+
+创建表
+* TableEnvironment可以调用.connect()方法连接外部系统,
+  并调用.createTemporaryTable()方法在Catalog中注册表
+    tableEnv
+        .connect(...)                           // 定义表的数据来源,和外部系统建立连接
+        .withFormat(...)                        // 定义数据格式化方法
+        .withSchema(...)                        // 定义表结构
+        .createTemporaryTable("MyTable")        // 创建临时表
+
+表的查询 - Table API  P72
+* Table API 是集成在 Scala 和 Java 语言内的查询 API
+* Table API 基于代表表的 Table 类, 并提供一套操作处理的 API;
+  这些方法会返回一个新的 Table 对象, 表示对输入表应用转换操作的结果
+* 有些关系型转换操作, 可以由多个方法调用组成, 构成链式调用结构
+  val sensorTable:Table = tableEnv.from("inputTable")
+  val resultTable:Table = sensorTable
+                            .select("id, temperature")
+                            .filter("id = 'sensor_1'")
+
+表的查询 - SQL
+* Flink 的 SQL 集成, 基于实现了 SQL 标准的 Apache Calcite
+* Flink 中, 用常规字符串定义 SQL 查询语句
+* SQL 查询结果也是一个新的 Table
+  val resultSqlTable:Table = tableEnv
+        .sqlQuery("select id, temperature fron sensorTable where id ='sensor_1'")
+
+DataStream 转换成表 P73
+* DataStream 可以直接转换成 Table, 进而调用 Table API 进行操作
+  val dataTable:Table = tableEnv.fromDataStream(dataStream)
+* 默认转换后的 Table Schema 和 DataStream 的字段定义一一对应, 也可单独指定
+  val dataStream:DataStream[SensorReading] = ...
+  val sensorTable = tableEnv.fromDataStream(
+    dataStream,
+    'id, 'timestamp, 'temperature
+  )
+
+数据类型与 Schema 的对应
+* DataStream 的数据类型与表的 Schema 之间的对应关系, 可以有两种:
+  基于字段名、或者基于字段位置
+
+* 基于名称 - name-based
+  val sensorTable = tableEnv.fromDataStream(
+    dataStream,
+    'timestamp as 'ts, 'id as 'myId, 'temperature
+  )
+
+* 基于位置 - position-based
+  * 基于名称 - name-based
+    val sensorTable = tableEnv.fromDataStream(
+      dataStream, 'myId, 'ts
+    )
+
+创建临时视图 Temporary View
+* 基于 DataStream 创建临时视图
+  tableEnv.createTemporaryView("sensorView", dataStream)
+
+  tableEnv.createTemporaryView("sensorView", dataStream,
+    'id, 'temperature, 'timestamp as 'ts
+  )
+* 基于 Table 创建临时视图
+  tableEnv.createTemporaryView("sensorView", sensorTable)
+
+
+输出表 P74
+* 表的输出, 通过将数据写入 TableSink 来实现
+* TableSink 是一个通用接口, 可以支持不同的文件格式、数据库和消息队列
+* 输出表最直接的方法, 就是通过 Table.insertInto() 方法将一个 Table
+  写入注册过的 TableSink 中
+  tableEnv.connect(...)
+    .createTemporaryTable("outputTable")
+  val resultSqlTable:Table = ....
+  resultSqlTable.insertInto("outputTable")
+
+输出到文件, 见测试源码  Append 和  Retract 的区别
+
+更新模式 P75  Update Mode
+* 对于流式查询, 需要声明在表和外部连接器之间如何执行转换
+* 与外部系统交换的消息类型, 由更新模式指定
+  > 追加模式  Append
+    - 表只做插入操作, 和外部连接器只交换插入（insert）消息
+  > 撤回模式  Retract
+    - 表和外部连接器交换添加(add)和撤回(retract)消息
+    - 插入操作(insert)编码为 Add 消息; 删除(delete)编码为 Retract 消息;
+      更新(Update)编码为上一条的 Retract 和下一条的 Add 消息
+  > 更新插入模式  Upset
+    - 更新和插入都被编码为 Upset 消息; 删除编码为 Delete 消息
+      根据 key 有没有决定是更新还是插入
+      好处是比撤回模式下更新操作发送消息减少
+      缺点是外部系统要设置 key

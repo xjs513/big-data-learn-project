@@ -12,6 +12,7 @@ import org.apache.flink.table.api.bridge.scala._
  * @Param $param$
  * @return $return$
  */
+
 object Example {
   def main(args: Array[String]): Unit = {
     // 创建执行环境
