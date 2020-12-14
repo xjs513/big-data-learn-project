@@ -8,7 +8,7 @@
 
 nohup hive --service metastore >/dev/null 2>&1 &
 
-nohup hive --service hiveserver2 >/dev/null 2>&1 & ## 这个启动比较慢, 要耐心等待一会儿！！！
+nohup hive --service hiveserver2 >/dev/null 2>&1 &     ## 这个启动比较慢, 要耐心等待一会儿！！！
 
 spark jars 下面的 hive 相关jar包冲突会有问题
 
