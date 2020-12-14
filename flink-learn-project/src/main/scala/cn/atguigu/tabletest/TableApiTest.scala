@@ -22,7 +22,7 @@ object TableApiTest {
     // 创建执行环境
     val env = StreamExecutionEnvironment.getExecutionEnvironment
 
-    // 首先创建表执行环境
+    // 创建表执行环境
     val tableEnv = StreamTableEnvironment.create(env)
 
     /*

@@ -1,0 +1,88 @@
+基于 Flink 的电商用户行为分析
+
+电商用户行为分析
+实体: 用户 商品 [平台]
+
+用户行为:
+1. 自身行为
+   登录方式、上线时间点和时长、页面停留和跳转
+2. 跟商品相关行为
+   业务行为   :点击、浏览、购买、支付
+   非业务行为 :收藏、喜欢、评分、评价、打标签、加购物车
+
+* 统计分析
+  - 点击、浏览
+  - 热门商品、近期热门商品、分类热门商品、流量统计
+
+* 偏好统计
+  - 收藏、喜欢、评分、打标签
+  - 用户画像, 推荐列表(结合特征工程和机器学习算法)
+
+* 风险控制
+  - 下单、支付、登录
+  - 刷单控制、订单失效控制、恶意登录监控(短时间频繁登录失败)
+
+项目模块设计
+
+    实时统计分析               业务流程及风险控制
+* 实时商品热门统计           * 页面广告黑名单过滤
+* 实时热门页面流量统计        * 恶意登录监控
+* 实时访问流量统计           * 订单支付失效监控
+* APP 市场推广统计          * 支付实时对账
+* 页面广告点击量统计
+
+两大类 5个模块  9个指标
+
+
+  热门商品 * 重点讲解这个           流量统计
+                                PV
+                                UV
+                                热门页面统计
+
+
+  市场营销指标      恶意登录      订单支付
+  APP 市场推广                  超时失效
+  页面广告分析                   实时对账
+
+数据源解析
+* 用户行为数据
+  UserBehavior.csv
+  e.g. 543462,1715,1464116,pv,1511658000
+* web 服务器日志
+  apache.log
+  e.g. 66.249.73.135 - - 17/05/2015:10:05:40 +0000 GET /blog/tags/ipv6
+
+* 数据结构 - UserBehavior
+  字段名       数据类型        说明
+  userId      Long          加密后的用户ID
+  itemId      Long          加密后的商品ID
+  categoryId  Int           加密后的商品类别ID
+  behavior    String        用户行为类型,包括(pv,buy,cart,fav)
+  timestamp   Long          行为发生的时间戳,单位秒
+
+* 数据结构 - ApacheLogEvent
+  字段名       数据类型        说明
+  ip          String        访问的IP
+  userId      Long          访问的userId
+  eventTime   Long          访问时间
+  method      String        访问方法 GET/POST/PUT/DELETE
+  url         String        访问的url
+
+热门商品实时统计
+* 基本需求
+  - 统计最近1个小时的热门商品,每5分钟更新一次
+  - 热门度用浏览次数(pv)衡量
+* 解决思路
+  - 在所有用户行为数据中,过滤出浏览行为进行统计
+  - 构建滑动窗口,长度1小时,滑动步长5分钟
+
+  DataStream -根据itemId分区-> KeyedStream -开窗-> WindowedStream -聚合计算-> DataStream
+
+  dataStream
+    .keyBy(itemId)
+    .timeWindow(1小时, 5分钟)
+    .aggregate(new CountAgg(), new WindowResultFunction()) # 最一般化的用法
+
+  CountAgg : 定义窗口聚合规则   预聚合,结果给WindowResultFunction
+  WindowResultFunction : 定义输出数据结构 ItemViewCount(itemId, windowEnd, count)
+  WindowedStream ===> DataStream[ItemViewCount]

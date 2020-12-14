@@ -44,12 +44,14 @@ object Example {
 
     val sqlResultTable: Table = tableEnv.sqlQuery(sql)
 
+    val explaination:String = tableEnv.explain(resultTable)
+    println(explaination)
 
     resultTable.toAppendStream[(String, Double)].print("resultTable")
     sqlResultTable.toAppendStream[(String, Double)].print("sqlResultTable")
 
     //
-    sqlResultTable.executeInsert("")
+    // sqlResultTable.executeInsert("")
 
     env.execute("tabble api example")
 
