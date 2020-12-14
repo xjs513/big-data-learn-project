@@ -1,10 +1,6 @@
 package cn.atguigu.apitest
 
-import java.util.Properties
-
-import org.apache.flink.api.common.serialization.SimpleStringSchema
 import org.apache.flink.streaming.api.scala._
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer
 
 
 object SourceTest {
@@ -23,25 +19,22 @@ object SourceTest {
 //
 //    stream1.print()
 //
-//    // 2. 从文件读取数据
-//    val stream2 = env.readTextFile("D:\\IdeaProjects\\big-data-learn-project\\flink-learn-project\\src\\main\\resources\\sensor.txt")
-//
-//    stream2.print()
+    // 2. 从文件读取数据
+    val stream2 = env.readTextFile("D:\\IdeaProjects\\big-data-learn-project\\flink-learn-project\\src\\main\\resources\\sensor.txt")
+
+    stream2.print()
 
     // 3. 从 Kafka 读取数据
-    val properties = new Properties
-    properties.setProperty("bootstrap.servers", "localhost:9092")
-    properties.setProperty("group.id", "test1")
-    val consumer = new FlinkKafkaConsumer[String](
-      "test", new SimpleStringSchema(), properties)
-    /*
-     * Flink 从topic中最初的数据开始消费
-     */
-    consumer.setStartFromEarliest()
-
-    val stream3 = env.addSource(consumer)
-
-    stream3.print()
+//    val properties = new Properties
+//    properties.setProperty("bootstrap.servers", "localhost:9092")
+//    properties.setProperty("group.id", "test1")
+//    val consumer = new FlinkKafkaConsumer[String](
+//      "test", new SimpleStringSchema(), properties)
+//    consumer.setStartFromEarliest()
+//
+//    val stream3 = env.addSource(consumer)
+//
+//    stream3.print()
 
     // 执行
     env.execute("source test")

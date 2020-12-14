@@ -2,3 +2,33 @@ P20-P39
 
 ExecutionEnvironment.getExecutionEnvironment
 StreamExecutionEnvironment.getExecutionEnvironment
+
+env -> source -> transformation -> sink -> execute
+
+# Source
+1. 从集合读取数据
+2. 从文件读取数据
+3. 从 socket 读取数据
+4. 从 Kafka 读取数据 **重点  addSource 通用的方法
+   Flink 官方提供了连接器,可以读下源码,看如何分区和维护offset等
+5. 自定义 source
+
+
+# transformation
+-- 简单转换算子
+1. map
+2. flatMap
+3. filter
+-- 键控流转换算子
+4. keyBy 基于key做分组，定义数据传输的方式
+   DataStream -> KeyedStream
+5. groupBy
+-- 滚动聚合算子
+* sum()
+* min()   只选当前最小值,其他字段是第一条记录
+* max()
+* minBy() 指定选取的字段 输出的还是整条记录
+* maxBy() 指定选取的字段
+
+
+# sink
